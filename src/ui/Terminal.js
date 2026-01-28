@@ -90,6 +90,16 @@ export class Terminal {
       this.focused = false;
     }, true);
 
+    // Ensure xterm gets focus when clicking anywhere in the container
+    this.container.addEventListener('mousedown', () => {
+      this.xterm.focus();
+    });
+
+    // Custom context menu for paste support
+    // Browser security requires trusted user interaction for clipboard access,
+    // so we handle right-click ourselves and use the Clipboard API
+    this._setupContextMenu();
+
     // Show initial prompt
     this.writePrompt();
 
@@ -109,6 +119,105 @@ export class Terminal {
       this.teleopActive = false;
       this.teleopType = null;
     });
+  }
+
+  _setupContextMenu() {
+    // Create custom context menu element
+    this.contextMenu = document.createElement('div');
+    this.contextMenu.className = 'terminal-context-menu';
+    this.contextMenu.innerHTML = `
+      <button class="context-menu-item" data-action="copy">Copy</button>
+      <button class="context-menu-item" data-action="paste">Paste</button>
+      <button class="context-menu-item" data-action="clear">Clear</button>
+    `;
+    this.contextMenu.style.display = 'none';
+    document.body.appendChild(this.contextMenu);
+
+    // Handle right-click on terminal
+    this.container.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      this._showContextMenu(e.clientX, e.clientY);
+    });
+
+    // Handle context menu item clicks
+    this.contextMenu.addEventListener('click', async (e) => {
+      const action = e.target.dataset.action;
+      if (!action) return;
+
+      this._hideContextMenu();
+
+      switch (action) {
+        case 'copy':
+          await this._handleCopy();
+          break;
+        case 'paste':
+          await this._handlePaste();
+          break;
+        case 'clear':
+          this.clear();
+          this.writePrompt();
+          this._refreshLine();
+          break;
+      }
+    });
+
+    // Hide menu on click outside or scroll
+    document.addEventListener('click', (e) => {
+      if (!this.contextMenu.contains(e.target)) {
+        this._hideContextMenu();
+      }
+    });
+
+    document.addEventListener('scroll', () => {
+      this._hideContextMenu();
+    }, true);
+  }
+
+  _showContextMenu(x, y) {
+    this.contextMenu.style.display = 'block';
+    this.contextMenu.style.left = `${x}px`;
+    this.contextMenu.style.top = `${y}px`;
+
+    // Ensure menu stays within viewport
+    const rect = this.contextMenu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) {
+      this.contextMenu.style.left = `${window.innerWidth - rect.width - 5}px`;
+    }
+    if (rect.bottom > window.innerHeight) {
+      this.contextMenu.style.top = `${window.innerHeight - rect.height - 5}px`;
+    }
+  }
+
+  _hideContextMenu() {
+    this.contextMenu.style.display = 'none';
+  }
+
+  async _handleCopy() {
+    const selection = this.xterm.getSelection();
+    if (selection) {
+      try {
+        await navigator.clipboard.writeText(selection);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    }
+  }
+
+  async _handlePaste() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        // Insert each character as if typed
+        for (const char of text) {
+          // Skip newlines or convert to space
+          if (char === '\n' || char === '\r') continue;
+          this._insertChar(char);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to paste:', err);
+      // Fallback: prompt user that paste failed
+    }
   }
 
   /**
@@ -557,6 +666,11 @@ export class Terminal {
       }
     }
     this.activeBagRecorders = [];
+
+    // Remove context menu
+    if (this.contextMenu && this.contextMenu.parentNode) {
+      this.contextMenu.parentNode.removeChild(this.contextMenu);
+    }
 
     // Dispose xterm
     this.xterm.dispose();

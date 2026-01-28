@@ -953,6 +953,40 @@ input:focus:not(:focus-visible) {
   background: #4a4a4a;
 }
 
+/* Terminal context menu */
+.terminal-context-menu {
+  position: fixed;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  padding: 4px 0;
+  z-index: 10000;
+  min-width: 120px;
+}
+
+.terminal-context-menu .context-menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.terminal-context-menu .context-menu-item:hover {
+  background: var(--accent-blue);
+}
+
+.terminal-context-menu .context-menu-item:focus {
+  outline: none;
+  background: var(--accent-blue);
+}
+
 /* Xterm overrides */
 .xterm {
   padding: 8px;
