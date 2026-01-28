@@ -1,5 +1,7 @@
 # <img src="logo.png" width="32" height="32" alt="logo" /> ROS 2 Turtle School
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Browser-based ROS2 CLI emulator for educational purposes. Runs entirely client-side.
 
 **Live demo:** https://madebytokens.github.io/ros2websim/
