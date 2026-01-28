@@ -1,5 +1,5 @@
 {
-  "name": "ros2websim",
+  "name": "ros2-turtle-school",
   "version": "1.0.0",
   "description": "Browser-based ROS2 CLI emulator for educational purposes",
   "type": "module",

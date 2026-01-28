@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/ros2websim/',
+  base: '/ros2-turtle-school/',
   build: {
     outDir: 'dist',
     sourcemap: true,
