@@ -1,5 +1,5 @@
 /**
- * Shell built-in commands - clear, ls, pwd, cd, echo, whoami, uname, exit
+ * Shell built-in commands - clear, ls, pwd, echo
  */
 
 import { commandRegistry } from '../commandRegistry.js';
@@ -74,15 +74,6 @@ function handlePwd(args, terminal) {
 }
 
 /**
- * Change directory (not supported)
- */
-function handleCd(args, terminal) {
-  terminal.writeln('cd: Simulated filesystem - directory change not supported');
-  terminal.finishCommand();
-  return true;
-}
-
-/**
  * Echo - print text
  */
 function handleEcho(args, terminal) {
@@ -93,41 +84,8 @@ function handleEcho(args, terminal) {
   return true;
 }
 
-/**
- * Whoami - print current user
- */
-function handleWhoami(args, terminal) {
-  terminal.writeln('ros2');
-  terminal.finishCommand();
-  return true;
-}
-
-/**
- * Uname - print system info
- */
-function handleUname(args, terminal) {
-  terminal.writeln('ROS2WebSim 1.0.0');
-  terminal.finishCommand();
-  return true;
-}
-
-/**
- * Exit/quit - show hint
- */
-function handleExit(args, terminal) {
-  terminal.writeln('Use Ctrl+C to stop running commands.');
-  terminal.writeln('Close terminal tabs with the X button.');
-  terminal.finishCommand();
-  return true;
-}
-
 // Register all shell commands
 commandRegistry.register('clear', handleClear);
 commandRegistry.register('ls', handleLs);
 commandRegistry.register('pwd', handlePwd);
-commandRegistry.register('cd', handleCd);
 commandRegistry.register('echo', handleEcho);
-commandRegistry.register('whoami', handleWhoami);
-commandRegistry.register('uname', handleUname);
-commandRegistry.register('exit', handleExit);
-commandRegistry.register('quit', handleExit);

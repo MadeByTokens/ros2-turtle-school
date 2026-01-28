@@ -21,7 +21,6 @@ function handleHelp(args, terminal) {
   terminal.writeln('  pwd               - Print working directory');
   terminal.writeln('  clear             - Clear the terminal');
   terminal.writeln('  echo <text>       - Print text');
-  terminal.writeln('  whoami            - Print current user');
   terminal.writeln('  help              - Show this help message');
   terminal.writeln('');
   terminal.writeln('Type "ros2 --help" for ros2 subcommands.');
