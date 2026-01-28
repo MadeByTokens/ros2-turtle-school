@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROS2 Web Emulator</title>
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+  <div id="app">
+    <header id="header">
+      <h1>ROS2 Web Emulator</h1>
+      <div class="header-controls">
+        <button id="toggle-graph" title="Toggle rqt_graph">Graph</button>
+        <button id="toggle-map" title="Toggle SLAM Map">Map</button>
+        <button id="toggle-console" title="Toggle rqt_console">Console</button>
+        <button id="show-help" title="Show Help">Help</button>
+      </div>
+    </header>
+
+    <main id="main-container">
+      <div id="visualization-panel">
+        <div id="canvas-container">
+          <canvas id="turtle-canvas" width="500" height="500"></canvas>
+          <div id="canvas-toolbar">
+            <button id="randomize-obstacles" title="Generate random obstacles">🎲 Random</button>
+            <button id="add-obstacle-mode" title="Click canvas to add obstacles">➕ Add</button>
+            <button id="delete-obstacle-mode" title="Click obstacles to delete">🗑️ Delete</button>
+            <button id="clear-obstacles" title="Remove all obstacles">Clear</button>
+            <button id="reset-obstacles" title="Reset to default">Reset</button>
+          </div>
+        </div>
+        <div id="map-container" class="hidden">
+          <canvas id="map-canvas" width="500" height="500"></canvas>
+        </div>
+        <div id="graph-container" class="hidden"></div>
+      </div>
+
+      <div id="terminal-panel">
+        <div id="terminal-tabs">
+          <div class="tab-list"></div>
+          <button id="add-terminal" title="Add Terminal">+</button>
+        </div>
+        <div id="terminals-container"></div>
+      </div>
+
+      <div id="console-panel" class="hidden">
+        <div class="console-header">
+          <span>rqt_console</span>
+          <select id="console-filter-level">
+            <option value="DEBUG">DEBUG</option>
+            <option value="INFO" selected>INFO</option>
+            <option value="WARN">WARN</option>
+            <option value="ERROR">ERROR</option>
+            <option value="FATAL">FATAL</option>
+          </select>
+          <input type="text" id="console-filter-node" placeholder="Filter by node...">
+          <button id="console-clear">Clear</button>
+          <button id="console-pause">Pause</button>
+          <button id="console-close">X</button>
+        </div>
+        <div id="console-messages"></div>
+      </div>
+    </main>
+
+    <div id="quick-commands" class="mobile-only">
+      <button data-cmd="ros2 topic list">Topics</button>
+      <button data-cmd="ros2 node list">Nodes</button>
+      <button data-cmd="rqt_graph">Graph</button>
+    </div>
+  </div>
+
+  <div id="modal-overlay" class="hidden">
+    <div id="modal-content">
+      <div class="modal-header">
+        <span id="modal-title">rqt</span>
+        <button id="modal-close">X</button>
+      </div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>
