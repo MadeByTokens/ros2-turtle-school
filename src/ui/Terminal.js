@@ -1,5 +1,6 @@
 import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { Events } from '../core/Events.js';
 
 /**
  * Terminal - Single xterm.js instance wrapper with command history and input handling
@@ -109,13 +110,13 @@ export class Terminal {
 
   _setupTeleopListeners() {
     // Listen for teleop activation
-    window.addEventListener('teleop-active', (event) => {
+    window.addEventListener(Events.TELEOP_ACTIVE, (event) => {
       this.teleopActive = true;
       this.teleopType = event.detail?.type || 'wasd-keys';
     });
 
     // Listen for teleop deactivation
-    window.addEventListener('teleop-inactive', () => {
+    window.addEventListener(Events.TELEOP_INACTIVE, () => {
       this.teleopActive = false;
       this.teleopType = null;
     });

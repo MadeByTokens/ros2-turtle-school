@@ -1,8 +1,11 @@
+import { Events } from './Events.js';
+import { ServiceContainer } from './ServiceContainer.js';
+
 /**
  * WorldState - Manages the simulation world including obstacles,
  * collision detection, and raycasting for simulated sensors
  */
-class WorldStateClass {
+export class WorldStateClass {
   constructor() {
     // World dimensions (matches turtlesim: 11x11 units)
     this.width = 11;
@@ -14,8 +17,19 @@ class WorldStateClass {
     // Turtles managed by turtlesim
     this.turtles = new Map();
 
+    // Optional callback for change notifications (for testing/decoupling)
+    this.onChangeCallback = null;
+
     // Default obstacles for SLAM demo
     this._initDefaultObstacles();
+  }
+
+  /**
+   * Set a callback for change notifications (useful for testing)
+   * @param {Function|null} callback - Callback function or null to clear
+   */
+  setOnChangeCallback(callback) {
+    this.onChangeCallback = callback;
   }
 
   /**
@@ -220,9 +234,14 @@ class WorldStateClass {
 
   /**
    * Notify listeners of changes
+   * Uses callback if set, otherwise falls back to window event dispatch
    */
   _notifyChange() {
-    window.dispatchEvent(new CustomEvent('world-state-changed'));
+    if (this.onChangeCallback) {
+      this.onChangeCallback();
+    } else {
+      window.dispatchEvent(new CustomEvent(Events.WORLD_STATE_CHANGED));
+    }
   }
 
   /**
@@ -466,3 +485,6 @@ class WorldStateClass {
 
 // Singleton instance
 export const WorldState = new WorldStateClass();
+
+// Register with ServiceContainer for dependency injection
+ServiceContainer.register('worldState', WorldState);

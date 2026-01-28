@@ -1,14 +1,20 @@
+import { Events } from '../core/Events.js';
+
 /**
  * Layout - Manages responsive layout for terminal/canvas/graph panels
+ *
+ * Accepts optional elements object for dependency injection/testing.
+ * Falls back to document.getElementById for backward compatibility.
  */
 export class Layout {
-  constructor() {
-    this.visualizationPanel = document.getElementById('visualization-panel');
-    this.terminalPanel = document.getElementById('terminal-panel');
-    this.canvasContainer = document.getElementById('canvas-container');
-    this.mapContainer = document.getElementById('map-container');
-    this.graphContainer = document.getElementById('graph-container');
-    this.consolePanel = document.getElementById('console-panel');
+  constructor(elements = {}) {
+    // Support both explicit elements and ID-based lookup for backward compatibility
+    this.visualizationPanel = elements.visualizationPanel || document.getElementById('visualization-panel');
+    this.terminalPanel = elements.terminalPanel || document.getElementById('terminal-panel');
+    this.canvasContainer = elements.canvasContainer || document.getElementById('canvas-container');
+    this.mapContainer = elements.mapContainer || document.getElementById('map-container');
+    this.graphContainer = elements.graphContainer || document.getElementById('graph-container');
+    this.consolePanel = elements.consolePanel || document.getElementById('console-panel');
 
     this.resizing = false;
     this.currentLayout = 'desktop';
@@ -73,7 +79,7 @@ export class Layout {
 
   _triggerResize() {
     // Dispatch resize event for components to handle
-    window.dispatchEvent(new Event('layout-resize'));
+    window.dispatchEvent(new Event(Events.LAYOUT_RESIZE));
   }
 
   /**
@@ -95,7 +101,7 @@ export class Layout {
    */
   toggleMap() {
     // Dispatch event for Canvas to toggle its map overlay
-    window.dispatchEvent(new CustomEvent('toggle-map-overlay'));
+    window.dispatchEvent(new CustomEvent(Events.TOGGLE_MAP_OVERLAY));
     this._triggerResize();
   }
 

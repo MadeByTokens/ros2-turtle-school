@@ -1,9 +1,11 @@
 import { LogManager } from './LogManager.js';
+import { Events } from './Events.js';
+import { ServiceContainer } from './ServiceContainer.js';
 
 /**
  * ProcessManager - Manages running nodes and their lifecycle
  */
-class ProcessManagerClass {
+export class ProcessManagerClass {
   constructor() {
     this.processes = new Map(); // processId -> { node, terminalId, package, executable }
     this.nextProcessId = 1;
@@ -33,7 +35,7 @@ class ProcessManagerClass {
     this.logger.info(`Spawned ${packageName}/${executable} as ${node.fullName} (pid: ${processId})`);
 
     // Dispatch event for UI updates
-    window.dispatchEvent(new CustomEvent('process-started', {
+    window.dispatchEvent(new CustomEvent(Events.PROCESS_STARTED, {
       detail: { processId, terminalId, nodeName: node.fullName }
     }));
 
@@ -59,7 +61,7 @@ class ProcessManagerClass {
     this.logger.info(`Killed process ${processId}`);
 
     // Dispatch event for UI updates
-    window.dispatchEvent(new CustomEvent('process-stopped', {
+    window.dispatchEvent(new CustomEvent(Events.PROCESS_STOPPED, {
       detail: { processId, terminalId, nodeName }
     }));
 
@@ -189,3 +191,6 @@ class ProcessManagerClass {
 
 // Singleton instance
 export const ProcessManager = new ProcessManagerClass();
+
+// Register with ServiceContainer for dependency injection
+ServiceContainer.register('processManager', ProcessManager);

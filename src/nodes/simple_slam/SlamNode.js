@@ -1,4 +1,5 @@
 import { Node } from '../../core/Node.js';
+import { Events } from '../../core/Events.js';
 import { nodeRegistry } from '../registry.js';
 
 /**
@@ -73,7 +74,7 @@ export class SlamNode extends Node {
     this.logInfo(`Map: ${this.gridWidth}x${this.gridHeight} cells, ${this.resolution}m resolution`);
 
     // Automatically show the map visualization
-    window.dispatchEvent(new CustomEvent('show-map'));
+    window.dispatchEvent(new CustomEvent(Events.SHOW_MAP));
     this.logInfo('Map visualization enabled - watch the occupancy grid build as you explore!');
   }
 
@@ -95,7 +96,7 @@ export class SlamNode extends Node {
     this.robotTheta = msg.theta;
 
     // Notify UI of robot pose update
-    window.dispatchEvent(new CustomEvent('robot-pose-update', {
+    window.dispatchEvent(new CustomEvent(Events.ROBOT_POSE_UPDATE, {
       detail: {
         x: this.robotX,
         y: this.robotY,
@@ -257,7 +258,7 @@ export class SlamNode extends Node {
     this.mapPub.publish(map);
 
     // Also notify UI directly
-    window.dispatchEvent(new CustomEvent('map-update', {
+    window.dispatchEvent(new CustomEvent(Events.MAP_UPDATE, {
       detail: {
         map: Array.from(data),
         info: map.info

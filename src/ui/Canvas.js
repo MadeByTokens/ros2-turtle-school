@@ -1,11 +1,19 @@
 import { WorldState } from '../core/WorldState.js';
+import { Events } from '../core/Events.js';
 
 /**
  * Canvas - 2D visualization for turtle and obstacles
+ *
+ * Accepts either a canvas element or an element ID for backward compatibility.
  */
 export class Canvas {
-  constructor(canvasId = 'turtle-canvas') {
-    this.canvas = document.getElementById(canvasId);
+  constructor(canvasOrId = 'turtle-canvas') {
+    // Support both element and ID for backward compatibility
+    if (typeof canvasOrId === 'string') {
+      this.canvas = document.getElementById(canvasOrId);
+    } else {
+      this.canvas = canvasOrId;
+    }
     this.ctx = this.canvas.getContext('2d');
 
     // World dimensions (turtlesim uses 11x11)
@@ -91,7 +99,7 @@ export class Canvas {
 
   _setupEventListeners() {
     // Listen for turtlesim updates
-    window.addEventListener('turtlesim-update', (event) => {
+    window.addEventListener(Events.TURTLESIM_UPDATE, (event) => {
       const { turtles, trails, background } = event.detail;
       this.turtles = turtles;
       this.trails = trails;
@@ -101,7 +109,7 @@ export class Canvas {
     });
 
     // Listen for lidar data
-    window.addEventListener('lidar-update', (event) => {
+    window.addEventListener(Events.LIDAR_UPDATE, (event) => {
       this.lidarData = event.detail;
       if (this.showLidar) {
         this._render();
@@ -109,7 +117,7 @@ export class Canvas {
     });
 
     // Listen for map updates
-    window.addEventListener('map-update', (event) => {
+    window.addEventListener(Events.MAP_UPDATE, (event) => {
       const { map, info } = event.detail;
       this.mapData = map;
       this.mapInfo = info;
@@ -121,10 +129,10 @@ export class Canvas {
 
     // Handle resize
     window.addEventListener('resize', () => this._handleResize());
-    window.addEventListener('layout-resize', () => this._handleResize());
+    window.addEventListener(Events.LAYOUT_RESIZE, () => this._handleResize());
 
     // Listen for world state changes
-    window.addEventListener('world-state-changed', () => this._render());
+    window.addEventListener(Events.WORLD_STATE_CHANGED, () => this._render());
 
     // Initial size
     this._handleResize();
@@ -560,7 +568,7 @@ export class Canvas {
   setEditMode(mode) {
     this.editMode = mode;
     this.canvas.style.cursor = mode === 'none' ? 'default' : mode === 'add' ? 'crosshair' : 'pointer';
-    window.dispatchEvent(new CustomEvent('canvas-edit-mode-changed', { detail: { mode } }));
+    window.dispatchEvent(new CustomEvent(Events.CANVAS_EDIT_MODE_CHANGED, { detail: { mode } }));
   }
 
   /**

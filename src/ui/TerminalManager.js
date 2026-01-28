@@ -1,5 +1,6 @@
 import { Terminal } from './Terminal.js';
 import { ProcessManager } from '../core/ProcessManager.js';
+import { Events } from '../core/Events.js';
 
 /**
  * TerminalManager - Manages multiple terminal panes
@@ -36,18 +37,18 @@ export class TerminalManager {
     });
 
     // Handle layout changes
-    window.addEventListener('layout-resize', () => {
+    window.addEventListener(Events.LAYOUT_RESIZE, () => {
       // Delay to allow layout to settle
       setTimeout(() => this._resizeAll(), 100);
     });
 
     // Listen for process state changes to update tab indicators
-    window.addEventListener('process-started', (event) => {
+    window.addEventListener(Events.PROCESS_STARTED, (event) => {
       const { terminalId } = event.detail || {};
       if (terminalId) this._updateTabIndicator(terminalId, true);
     });
 
-    window.addEventListener('process-stopped', (event) => {
+    window.addEventListener(Events.PROCESS_STOPPED, (event) => {
       const { terminalId } = event.detail || {};
       if (terminalId) this._updateTabIndicator(terminalId, false);
     });

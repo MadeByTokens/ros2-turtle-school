@@ -1,5 +1,6 @@
 import { Node } from '../../core/Node.js';
 import { WorldState } from '../../core/WorldState.js';
+import { Events } from '../../core/Events.js';
 import { nodeRegistry } from '../registry.js';
 
 /**
@@ -464,7 +465,7 @@ export class TurtlesimNode extends Node {
    * Notify canvas component to redraw
    */
   _notifyCanvas() {
-    const event = new CustomEvent('turtlesim-update', {
+    window.dispatchEvent(new CustomEvent(Events.TURTLESIM_UPDATE, {
       detail: {
         turtles: Array.from(this.turtles.values()),
         trails: this.trails,
@@ -474,8 +475,7 @@ export class TurtlesimNode extends Node {
           b: this.getParameter('background_b')
         }
       }
-    });
-    window.dispatchEvent(event);
+    }));
   }
 
   /**

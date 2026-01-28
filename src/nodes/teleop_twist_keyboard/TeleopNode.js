@@ -1,4 +1,5 @@
 import { Node } from '../../core/Node.js';
+import { Events } from '../../core/Events.js';
 import { nodeRegistry } from '../registry.js';
 
 /**
@@ -47,7 +48,7 @@ export class TeleopTwistKeyboardNode extends Node {
     this.logInfo(`Publishing to: ${this.targetTopic}`);
 
     // Dispatch event to show keyboard hint
-    window.dispatchEvent(new CustomEvent('teleop-active', {
+    window.dispatchEvent(new CustomEvent(Events.TELEOP_ACTIVE, {
       detail: { type: 'wasd-keys', node: this.fullName }
     }));
   }
@@ -59,7 +60,7 @@ export class TeleopTwistKeyboardNode extends Node {
     }
     this.activeKeys.clear();
 
-    window.dispatchEvent(new CustomEvent('teleop-inactive', {
+    window.dispatchEvent(new CustomEvent(Events.TELEOP_INACTIVE, {
       detail: { node: this.fullName }
     }));
   }

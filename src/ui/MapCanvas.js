@@ -1,9 +1,18 @@
+import { Events } from '../core/Events.js';
+
 /**
  * MapCanvas - Occupancy grid visualization for SLAM
+ *
+ * Accepts either a canvas element or an element ID for backward compatibility.
  */
 export class MapCanvas {
-  constructor(canvasId = 'map-canvas') {
-    this.canvas = document.getElementById(canvasId);
+  constructor(canvasOrId = 'map-canvas') {
+    // Support both element and ID for backward compatibility
+    if (typeof canvasOrId === 'string') {
+      this.canvas = document.getElementById(canvasOrId);
+    } else {
+      this.canvas = canvasOrId;
+    }
     this.ctx = this.canvas.getContext('2d');
 
     // Map data
@@ -24,7 +33,7 @@ export class MapCanvas {
 
   _setupEventListeners() {
     // Listen for map updates
-    window.addEventListener('map-update', (event) => {
+    window.addEventListener(Events.MAP_UPDATE, (event) => {
       const { map, info } = event.detail;
       this.mapData = map;
       this.mapInfo = info;
@@ -32,7 +41,7 @@ export class MapCanvas {
     });
 
     // Listen for robot pose updates
-    window.addEventListener('robot-pose-update', (event) => {
+    window.addEventListener(Events.ROBOT_POSE_UPDATE, (event) => {
       const { x, y, theta } = event.detail;
       this.robotX = x;
       this.robotY = y;
@@ -42,7 +51,7 @@ export class MapCanvas {
 
     // Handle resize
     window.addEventListener('resize', () => this._handleResize());
-    window.addEventListener('layout-resize', () => this._handleResize());
+    window.addEventListener(Events.LAYOUT_RESIZE, () => this._handleResize());
 
     // Initial size
     this._handleResize();

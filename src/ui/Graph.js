@@ -1,12 +1,20 @@
 import cytoscape from 'cytoscape';
 import { SimDDS } from '../core/SimDDS.js';
+import { Events } from '../core/Events.js';
 
 /**
  * Graph - rqt_graph visualization using Cytoscape.js
+ *
+ * Accepts either a container element or an element ID for backward compatibility.
  */
 export class Graph {
-  constructor(containerId = 'graph-container') {
-    this.container = document.getElementById(containerId);
+  constructor(containerOrId = 'graph-container') {
+    // Support both element and ID for backward compatibility
+    if (typeof containerOrId === 'string') {
+      this.container = document.getElementById(containerOrId);
+    } else {
+      this.container = containerOrId;
+    }
     this.cy = null;
     this.updateInterval = null;
 
@@ -268,7 +276,7 @@ export class Graph {
     canvasContainer?.classList.remove('hidden');
 
     // Trigger resize so canvas recalculates its size
-    window.dispatchEvent(new Event('layout-resize'));
+    window.dispatchEvent(new Event(Events.LAYOUT_RESIZE));
   }
 
   /**

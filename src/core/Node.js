@@ -1,8 +1,12 @@
 import { SimDDS } from './SimDDS.js';
 import { LogManager } from './LogManager.js';
+import { ServiceContainer } from './ServiceContainer.js';
 
 /**
  * Base class for all simulated ROS2 nodes
+ *
+ * Supports dependency injection for testing:
+ *   new Node('test', { simDDS: mockDDS, logManager: mockLogger })
  */
 export class Node {
   constructor(name, options = {}) {
@@ -16,10 +20,17 @@ export class Node {
     this.timers = [];
     this.parameters = new Map();
     this.running = false;
-    this.logger = LogManager.getLogger(this.fullName);
+
+    // Support dependency injection with fallback chain:
+    // 1. Explicit option passed to constructor
+    // 2. ServiceContainer registration
+    // 3. Default singleton import
+    this.simDDS = options.simDDS || ServiceContainer.get('simDDS') || SimDDS;
+    this.logManager = options.logManager || ServiceContainer.get('logManager') || LogManager;
+    this.logger = this.logManager.getLogger(this.fullName);
 
     // Register with SimDDS
-    SimDDS.registerNode(this.fullName, {
+    this.simDDS.registerNode(this.fullName, {
       name: this.name,
       namespace: this.namespace
     });
@@ -79,7 +90,7 @@ export class Node {
    * Create a publisher
    */
   createPublisher(topic, msgType) {
-    const pub = SimDDS.createPublisher(this.fullName, topic, msgType);
+    const pub = this.simDDS.createPublisher(this.fullName, topic, msgType);
     this.publishers.push(pub);
     return pub;
   }
@@ -88,7 +99,7 @@ export class Node {
    * Create a subscription
    */
   createSubscription(topic, msgType, callback) {
-    const sub = SimDDS.createSubscription(this.fullName, topic, msgType, callback.bind(this));
+    const sub = this.simDDS.createSubscription(this.fullName, topic, msgType, callback.bind(this));
     this.subscriptions.push(sub);
     return sub;
   }
@@ -97,7 +108,7 @@ export class Node {
    * Create a service server
    */
   createService(serviceName, srvType, handler) {
-    const srv = SimDDS.createService(this.fullName, serviceName, srvType, handler.bind(this));
+    const srv = this.simDDS.createService(this.fullName, serviceName, srvType, handler.bind(this));
     this.services.push(srv);
     return srv;
   }
@@ -111,7 +122,7 @@ export class Node {
       goalCallback: handlers.goalCallback?.bind(this),
       cancelCallback: handlers.cancelCallback?.bind(this)
     };
-    const actionServer = SimDDS.createActionServer(this.fullName, actionName, actionType, boundHandlers);
+    const actionServer = this.simDDS.createActionServer(this.fullName, actionName, actionType, boundHandlers);
     this.actionServers.push(actionServer);
     return actionServer;
   }
@@ -220,6 +231,6 @@ export class Node {
     this.actionServers = [];
 
     // Unregister from DDS (handles all comm cleanup)
-    SimDDS.unregisterNode(this.fullName);
+    this.simDDS.unregisterNode(this.fullName);
   }
 }

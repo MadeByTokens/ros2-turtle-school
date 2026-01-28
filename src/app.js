@@ -13,6 +13,7 @@ import { parseCommand } from './cli/parser.js';
 import { ProcessManager } from './core/ProcessManager.js';
 import { SimDDS } from './core/SimDDS.js';
 import { LogManager } from './core/LogManager.js';
+import { Events } from './core/Events.js';
 
 // Import all nodes (triggers self-registration)
 import './nodes/index.js';
@@ -126,19 +127,19 @@ class App {
     this._setupMapOverlayButtons();
 
     // Custom events
-    window.addEventListener('toggle-graph', () => {
+    window.addEventListener(Events.TOGGLE_GRAPH, () => {
       this.graph.toggle();
     });
 
-    window.addEventListener('toggle-console', () => {
+    window.addEventListener(Events.TOGGLE_CONSOLE, () => {
       this.rqtConsole.toggle();
     });
 
-    window.addEventListener('show-map', () => {
+    window.addEventListener(Events.SHOW_MAP, () => {
       this.layout.showMap();
     });
 
-    window.addEventListener('open-rqt-modal', () => {
+    window.addEventListener(Events.OPEN_RQT_MODAL, () => {
       this._showRqtModal();
     });
 
@@ -158,12 +159,12 @@ class App {
     });
 
     // Teleop active indicator
-    window.addEventListener('teleop-active', (event) => {
+    window.addEventListener(Events.TELEOP_ACTIVE, (event) => {
       const { type } = event.detail;
       this._showTeleopHint(type);
     });
 
-    window.addEventListener('teleop-inactive', () => {
+    window.addEventListener(Events.TELEOP_INACTIVE, () => {
       this._hideTeleopHint();
     });
 
@@ -221,7 +222,7 @@ class App {
     });
 
     // Listen for edit mode changes
-    window.addEventListener('canvas-edit-mode-changed', (event) => {
+    window.addEventListener(Events.CANVAS_EDIT_MODE_CHANGED, (event) => {
       this._updateObstacleButtons(event.detail.mode);
     });
   }
@@ -257,7 +258,7 @@ class App {
     });
 
     // Listen for toggle-map-overlay event (from Layout.toggleMap)
-    window.addEventListener('toggle-map-overlay', () => {
+    window.addEventListener(Events.TOGGLE_MAP_OVERLAY, () => {
       const isVisible = this.canvas.toggleMap();
       toggleBtn?.classList.toggle('active', isVisible);
       opacityControl?.classList.toggle('hidden', !isVisible);

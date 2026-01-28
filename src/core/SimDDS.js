@@ -1,10 +1,11 @@
 import { LocalComm } from '../comm/LocalComm.js';
+import { ServiceContainer } from './ServiceContainer.js';
 
 /**
  * SimDDS - Simulated DDS middleware singleton
  * Provides ROS2-like pub/sub, services, and actions
  */
-class SimDDSClass {
+export class SimDDSClass {
   constructor() {
     this.comm = new LocalComm();
     this.nodes = new Map(); // nodeId -> node info
@@ -300,3 +301,6 @@ class SimDDSClass {
 
 // Singleton instance
 export const SimDDS = new SimDDSClass();
+
+// Register with ServiceContainer for dependency injection
+ServiceContainer.register('simDDS', SimDDS);

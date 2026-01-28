@@ -1,4 +1,5 @@
 import { Node } from '../../core/Node.js';
+import { Events } from '../../core/Events.js';
 import { nodeRegistry } from '../registry.js';
 
 /**
@@ -39,7 +40,7 @@ export class TurtleTeleopNode extends Node {
     this.logInfo(`Publishing to: ${this.targetTopic}`);
 
     // Dispatch event to show keyboard hint
-    window.dispatchEvent(new CustomEvent('teleop-active', {
+    window.dispatchEvent(new CustomEvent(Events.TELEOP_ACTIVE, {
       detail: { type: 'arrow-keys', node: this.fullName }
     }));
   }
@@ -51,7 +52,7 @@ export class TurtleTeleopNode extends Node {
     }
     this.activeKeys.clear();
 
-    window.dispatchEvent(new CustomEvent('teleop-inactive', {
+    window.dispatchEvent(new CustomEvent(Events.TELEOP_INACTIVE, {
       detail: { node: this.fullName }
     }));
   }

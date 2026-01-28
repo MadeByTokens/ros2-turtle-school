@@ -1,3 +1,5 @@
+import { ServiceContainer } from './ServiceContainer.js';
+
 /**
  * LogManager - Centralized logging system with severity levels
  * Supports ROS2-style logging: DEBUG, INFO, WARN, ERROR, FATAL
@@ -11,7 +13,7 @@ const LOG_LEVELS = {
   FATAL: 4
 };
 
-class LogManagerClass {
+export class LogManagerClass {
   constructor() {
     this.logs = [];
     this.maxLogs = 1000;
@@ -209,3 +211,6 @@ class LogManagerClass {
 
 // Singleton instance
 export const LogManager = new LogManagerClass();
+
+// Register with ServiceContainer for dependency injection
+ServiceContainer.register('logManager', LogManager);

@@ -2,16 +2,20 @@ import { LogManager } from '../core/LogManager.js';
 
 /**
  * RqtConsole - Log viewer with filtering capabilities
+ *
+ * Accepts optional elements object for dependency injection/testing.
+ * Falls back to document.getElementById for backward compatibility.
  */
 export class RqtConsole {
-  constructor() {
-    this.panel = document.getElementById('console-panel');
-    this.messagesContainer = document.getElementById('console-messages');
-    this.filterLevel = document.getElementById('console-filter-level');
-    this.filterNode = document.getElementById('console-filter-node');
-    this.clearButton = document.getElementById('console-clear');
-    this.pauseButton = document.getElementById('console-pause');
-    this.closeButton = document.getElementById('console-close');
+  constructor(elements = {}) {
+    // Support both explicit elements and ID-based lookup for backward compatibility
+    this.panel = elements.panel || document.getElementById('console-panel');
+    this.messagesContainer = elements.messages || document.getElementById('console-messages');
+    this.filterLevel = elements.filterLevel || document.getElementById('console-filter-level');
+    this.filterNode = elements.filterNode || document.getElementById('console-filter-node');
+    this.clearButton = elements.clearButton || document.getElementById('console-clear');
+    this.pauseButton = elements.pauseButton || document.getElementById('console-pause');
+    this.closeButton = elements.closeButton || document.getElementById('console-close');
 
     this.paused = false;
     this.pendingLogs = [];
