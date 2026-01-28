@@ -36,36 +36,45 @@ src/
 │   ├── BagRecorder.js      # Topic recording
 │   ├── BagPlayer.js        # Bag playback
 │   ├── TFBuffer.js         # Transform tree
+│   ├── EventBus.js         # App-level event bus
 │   └── WorldState.js       # Obstacles, raycasting
 ├── msgs/               # Message definitions
-│   ├── index.js            # Registry
+│   ├── registry.js         # Message registry singleton
+│   ├── loader.js           # Barrel file (imports all)
+│   ├── index.js            # Public API
 │   ├── geometry_msgs.js
 │   ├── sensor_msgs.js
 │   ├── nav_msgs.js
 │   └── turtlesim_*.js
 ├── nodes/              # Simulated ROS2 nodes
-│   ├── registry.js         # Package/executable mapping
+│   ├── registry.js         # Node registry singleton
+│   ├── index.js            # Barrel file (imports all)
 │   ├── turtlesim/
 │   ├── teleop_twist_keyboard/
 │   ├── simple_slam/
 │   └── tf2_ros/
 ├── cli/                # Command parsers
+│   ├── commandRegistry.js  # Command registry singleton
 │   ├── parser.js           # Main router
-│   └── ros2_*.js           # Subcommand handlers
+│   └── ros2_*.js           # Subcommand handlers (self-register)
 └── ui/                 # UI components
     ├── Terminal.js         # xterm.js wrapper
     ├── TerminalManager.js  # Multi-pane support
     ├── Canvas.js           # Turtle visualization
     ├── MapCanvas.js        # Occupancy grid
-    └── Graph.js            # Cytoscape rqt_graph
+    ├── Graph.js            # Cytoscape rqt_graph
+    └── HelpModal.js        # Tabbed help modal
 ```
 
 ## Adding a New Node
+
+Nodes self-register with the registry. Two steps:
 
 1. Create `src/nodes/mypackage/MyNode.js`:
 
 ```javascript
 import { Node } from '../../core/Node.js';
+import { nodeRegistry } from '../registry.js';
 
 export class MyNode extends Node {
   constructor(name = 'my_node', options = {}) {
@@ -93,68 +102,81 @@ export class MyNode extends Node {
     // Cleanup
   }
 }
+
+// Self-register
+nodeRegistry.register('mypackage', 'my_node', MyNode);
 ```
 
-2. Register in `src/nodes/registry.js`:
+2. Import in `src/nodes/index.js`:
 
 ```javascript
-import { MyNode } from './mypackage/MyNode.js';
-
-const registry = {
-  // ...
-  mypackage: {
-    my_node: MyNode
-  }
-};
+import './mypackage/MyNode.js';
 ```
 
-3. Now works: `ros2 run mypackage my_node`
+Now works: `ros2 run mypackage my_node`
 
 ## Adding a New Message Type
 
-1. Add to appropriate file in `src/msgs/`:
+Messages self-register with the registry. Two steps:
+
+1. Create or edit a file in `src/msgs/`:
 
 ```javascript
 // src/msgs/my_msgs.js
-export default {
-  MyMessage: {
-    fields: {
-      value: { type: 'float64', default: 0.0 },
-      name: { type: 'string', default: '' }
-    },
-    create: (data = {}) => ({
-      value: data.value ?? 0.0,
-      name: data.name ?? ''
-    }),
-    definition: `float64 value\nstring name`
-  }
+import { messageRegistry } from './registry.js';
+
+export const MyMessage = {
+  name: 'my_msgs/msg/MyMessage',
+  fields: {
+    value: { type: 'float64', default: 0.0 },
+    name: { type: 'string', default: '' }
+  },
+  create: (data = {}) => ({
+    value: data.value ?? 0.0,
+    name: data.name ?? ''
+  }),
+  definition: `float64 value\nstring name`
 };
+
+// Self-register
+messageRegistry.registerMessage('my_msgs/msg/MyMessage', MyMessage);
+
+export default { MyMessage };
 ```
 
-2. Register in `src/msgs/index.js`:
+2. Import in `src/msgs/loader.js`:
 
 ```javascript
-import my_msgs from './my_msgs.js';
-
-const messages = {
-  // ...
-  'my_msgs/msg/MyMessage': my_msgs.MyMessage
-};
+import './my_msgs.js';
 ```
 
 ## Adding a CLI Command
 
-Edit `src/cli/parser.js` or create a new handler file:
+CLI commands self-register. For ros2 subcommands:
+
+1. Create `src/cli/ros2_mycommand.js`:
 
 ```javascript
-// In parser.js switch statement
-case 'mycommand':
+import { commandRegistry } from './commandRegistry.js';
+
+export async function handleRos2Mycommand(args, terminal) {
   terminal.writeln('Output here');
   terminal.finishCommand();
-  break;
+}
+
+// Self-register
+commandRegistry.registerRos2('mycommand', handleRos2Mycommand);
+
+export default { handleRos2Mycommand };
 ```
 
-For ros2 subcommands, create `src/cli/ros2_mycommand.js` and import in `parser.js`.
+2. Import in `src/cli/parser.js`:
+
+```javascript
+import './ros2_mycommand.js';
+```
+
+Now works: `ros2 mycommand`
 
 ## Key Patterns
 
@@ -192,6 +214,22 @@ parameters: {
 // Usage
 const val = this.getParameter('my_param');
 this.setParameter('my_param', 100);
+```
+
+**Event Bus:**
+```javascript
+import { EventBus } from './core/EventBus.js';
+
+// Subscribe
+const unsubscribe = EventBus.on('my-event', (data) => {
+  console.log(data);
+});
+
+// Emit
+EventBus.emit('my-event', { foo: 'bar' });
+
+// Cleanup
+unsubscribe();
 ```
 
 ## Testing
