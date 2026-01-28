@@ -4,7 +4,7 @@
 
 Browser-based ROS2 CLI emulator for educational purposes. Runs entirely client-side.
 
-**Live demo:** https://madebytokens.github.io/ros2websim/
+**Live demo:** https://madebytokens.github.io/ros2-turtle-school/
 
 ## Features
 
