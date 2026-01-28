@@ -55,7 +55,8 @@ src/
 │   ├── BagRecorder.js      # Topic recording
 │   ├── BagPlayer.js        # Bag playback
 │   ├── TFBuffer.js         # Transform tree
-│   ├── EventBus.js         # App-level event bus
+│   ├── Events.js           # Event name constants
+│   ├── ServiceContainer.js # Dependency injection container
 │   └── WorldState.js       # Obstacles, raycasting
 ├── msgs/               # Message definitions
 │   ├── registry.js         # Message registry singleton
@@ -75,6 +76,7 @@ src/
 ├── cli/                # Command parsers
 │   ├── commandRegistry.js  # Command registry singleton
 │   ├── parser.js           # Main router
+│   ├── builtins/           # Shell commands (clear, ls, help, etc.)
 │   └── ros2_*.js           # Subcommand handlers (self-register)
 └── ui/                 # UI components
     ├── Terminal.js         # xterm.js wrapper with teleop key forwarding
@@ -236,20 +238,19 @@ const val = this.getParameter('my_param');
 this.setParameter('my_param', 100);
 ```
 
-**Event Bus:**
+**Events (window events with constants):**
 ```javascript
-import { EventBus } from './core/EventBus.js';
+import { Events } from './core/Events.js';
 
-// Subscribe
-const unsubscribe = EventBus.on('my-event', (data) => {
-  console.log(data);
+// Listen
+window.addEventListener(Events.TURTLESIM_UPDATE, (event) => {
+  console.log(event.detail);
 });
 
-// Emit
-EventBus.emit('my-event', { foo: 'bar' });
-
-// Cleanup
-unsubscribe();
+// Dispatch
+window.dispatchEvent(new CustomEvent(Events.TURTLESIM_UPDATE, {
+  detail: { turtles: [], trails: [] }
+}));
 ```
 
 ## SLAM Tutorial
