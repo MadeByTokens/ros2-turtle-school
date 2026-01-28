@@ -1,4 +1,9 @@
-# <img src="logo.png" width="32" height="32" alt="logo" /> ROS 2 Turtle School
+<p align="center">
+  <img src="logo_readme.png" width="96" height="96" alt="ROS 2 Turtle School logo" />
+</p>
+
+
+# ROS 2 Turtle School
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
