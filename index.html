@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROS 2 Turtle School</title>
+  <script type="module" crossorigin src="/ros2-turtle-school/assets/index-Cmv39GE5.js"></script>
+  <link rel="modulepreload" crossorigin href="/ros2-turtle-school/assets/vendor-xterm-DgJRGhIz.js">
+  <link rel="modulepreload" crossorigin href="/ros2-turtle-school/assets/vendor-cytoscape-BQaXIfA_.js">
+  <link rel="stylesheet" crossorigin href="/ros2-turtle-school/assets/index-COM-rQGW.css">
+</head>
+<body>
+  <div id="app">
+    <header id="header">
+      <div class="header-brand">
+        <img class="header-logo" src="/ros2-turtle-school/assets/logo-Dd02KSvA.png" width="28" height="28" alt="ROS 2 Turtle School logo" />
+        <h1>ROS 2 Turtle School</h1>
+      </div>
+      <div class="header-controls">
+        <button id="toggle-graph" aria-label="Toggle node graph" data-tooltip="Node Graph">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/>
+            <line x1="9" y1="6" x2="15" y2="6"/><line x1="6" y1="9" x2="6" y2="15"/><line x1="18" y1="9" x2="18" y2="15"/><line x1="9" y1="18" x2="15" y2="18"/>
+          </svg>
+          <span class="btn-label">Graph</span>
+        </button>
+        <button id="toggle-map" aria-label="Toggle SLAM map" data-tooltip="SLAM Map">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>
+          </svg>
+          <span class="btn-label">Map</span>
+        </button>
+        <button id="toggle-console" aria-label="Toggle log console" data-tooltip="Log Console">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+          </svg>
+          <span class="btn-label">Console</span>
+        </button>
+        <button id="show-help" aria-label="Show help" data-tooltip="Help & Commands">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span class="btn-label">Help</span>
+        </button>
+      </div>
+    </header>
+
+    <main id="main-container">
+      <div id="visualization-panel">
+        <div id="canvas-container">
+          <canvas id="turtle-canvas" width="500" height="500" aria-label="Turtlesim simulation canvas" role="img"></canvas>
+          <div id="canvas-toolbar" role="toolbar" aria-label="Canvas controls">
+            <button id="randomize-obstacles" aria-label="Generate random obstacles">🎲 Random</button>
+            <button id="add-obstacle-mode" aria-label="Click canvas to add obstacles">➕ Add</button>
+            <button id="delete-obstacle-mode" aria-label="Click obstacles to delete">🗑️ Delete</button>
+            <button id="clear-obstacles" aria-label="Remove all obstacles">Clear</button>
+            <button id="reset-obstacles" aria-label="Reset obstacles to default">Reset</button>
+            <span class="toolbar-separator"></span>
+            <button id="toggle-map-overlay" aria-label="Toggle occupancy map overlay">🗺️ Map</button>
+            <label id="map-opacity-control" class="opacity-control hidden">
+              <input type="range" id="map-opacity-slider" min="0" max="100" value="50" aria-label="Map opacity">
+              <span id="map-opacity-value">50%</span>
+            </label>
+          </div>
+        </div>
+        <!-- Map container hidden - map is now rendered as canvas overlay -->
+        <div id="map-container" class="hidden" style="display: none;">
+          <canvas id="map-canvas" width="500" height="500"></canvas>
+        </div>
+        <div id="graph-container" class="hidden"></div>
+      </div>
+
+      <div id="terminal-panel" role="region" aria-label="Terminal panels">
+        <div id="terminal-tabs">
+          <div class="tab-list" role="tablist" aria-label="Terminal tabs"></div>
+          <button id="add-terminal" aria-label="Add new terminal">+</button>
+        </div>
+        <div id="terminals-container" role="tabpanel"></div>
+      </div>
+
+    </main>
+
+    <div id="console-panel" class="hidden">
+      <div class="console-header">
+        <span>rqt_console</span>
+        <select id="console-filter-level">
+          <option value="DEBUG">DEBUG</option>
+          <option value="INFO" selected>INFO</option>
+          <option value="WARN">WARN</option>
+          <option value="ERROR">ERROR</option>
+          <option value="FATAL">FATAL</option>
+        </select>
+        <input type="text" id="console-filter-node" placeholder="Filter by node...">
+        <button id="console-clear">Clear</button>
+        <button id="console-pause">Pause</button>
+        <button id="console-close" aria-label="Close console">X</button>
+      </div>
+      <div id="console-messages"></div>
+    </div>
+
+    <div id="quick-commands" class="mobile-only">
+      <button data-cmd="ros2 topic list">Topics</button>
+      <button data-cmd="ros2 node list">Nodes</button>
+      <button data-cmd="rqt_graph">Graph</button>
+    </div>
+  </div>
+
+  <div id="modal-overlay" class="hidden">
+    <div id="modal-content">
+      <div class="modal-header">
+        <span id="modal-title">rqt</span>
+        <button id="modal-close" aria-label="Close modal">X</button>
+      </div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+</body>
+</html>
