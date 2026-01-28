@@ -22,6 +22,13 @@ export class Canvas {
     this.showLidar = false;
     this.showTF = false;
 
+    // Map overlay options
+    this.showMap = false;
+    this.mapOpacity = 0.5;
+    this.mapData = null;
+    this.mapInfo = null;
+    this.mapCanvas = null; // Off-screen canvas for map rendering
+
     // Resize debounce guard
     this._resizeScheduled = false;
 
@@ -97,6 +104,17 @@ export class Canvas {
     window.addEventListener('lidar-update', (event) => {
       this.lidarData = event.detail;
       if (this.showLidar) {
+        this._render();
+      }
+    });
+
+    // Listen for map updates
+    window.addEventListener('map-update', (event) => {
+      const { map, info } = event.detail;
+      this.mapData = map;
+      this.mapInfo = info;
+      this._updateMapCanvas();
+      if (this.showMap) {
         this._render();
       }
     });
@@ -199,6 +217,86 @@ export class Canvas {
   }
 
   /**
+   * Update the off-screen map canvas when map data changes
+   */
+  _updateMapCanvas() {
+    if (!this.mapData || !this.mapInfo) return;
+
+    const { width, height, resolution, origin } = this.mapInfo;
+    if (!width || !height) return;
+
+    // Create or resize off-screen canvas
+    if (!this.mapCanvas) {
+      this.mapCanvas = document.createElement('canvas');
+    }
+    this.mapCanvas.width = width;
+    this.mapCanvas.height = height;
+
+    const mapCtx = this.mapCanvas.getContext('2d');
+    const imageData = mapCtx.createImageData(width, height);
+
+    // Render occupancy grid data to image
+    for (let i = 0; i < this.mapData.length; i++) {
+      const value = this.mapData[i];
+      let gray;
+
+      if (value === -1) {
+        // Unknown - dark gray
+        gray = 128;
+      } else if (value === 0) {
+        // Free space - light/white
+        gray = 255;
+      } else {
+        // Occupied - scale from gray to black (0-100 -> 200-0)
+        gray = Math.max(0, 200 - (value * 2));
+      }
+
+      const pixelIndex = i * 4;
+      imageData.data[pixelIndex] = gray;     // R
+      imageData.data[pixelIndex + 1] = gray; // G
+      imageData.data[pixelIndex + 2] = gray; // B
+      imageData.data[pixelIndex + 3] = 255;  // A
+    }
+
+    mapCtx.putImageData(imageData, 0, 0);
+  }
+
+  /**
+   * Render map overlay on canvas
+   */
+  _renderMapOverlay() {
+    if (!this.mapCanvas || !this.mapInfo) return;
+
+    const ctx = this.ctx;
+    const { width: mapWidth, height: mapHeight, resolution, origin } = this.mapInfo;
+
+    // Save context state
+    ctx.save();
+    ctx.globalAlpha = this.mapOpacity;
+
+    // Calculate map position and size in canvas coordinates
+    const originX = origin?.position?.x || 0;
+    const originY = origin?.position?.y || 0;
+
+    // Map covers mapWidth * resolution in world units
+    const worldMapWidth = mapWidth * resolution;
+    const worldMapHeight = mapHeight * resolution;
+
+    // Convert to canvas coordinates
+    const canvasOrigin = this._worldToCanvas(originX, originY + worldMapHeight);
+    const canvasWidth = this._worldToCanvasScale(worldMapWidth);
+    const canvasHeight = this._worldToCanvasScale(worldMapHeight);
+
+    // Draw the map (flip vertically since occupancy grid Y is bottom-up)
+    ctx.translate(canvasOrigin.x, canvasOrigin.y);
+    ctx.scale(1, -1);
+    ctx.drawImage(this.mapCanvas, 0, -canvasHeight, canvasWidth, canvasHeight);
+
+    // Restore context state
+    ctx.restore();
+  }
+
+  /**
    * Main render function
    */
   _render() {
@@ -209,6 +307,11 @@ export class Canvas {
     // Clear canvas with background color
     ctx.fillStyle = `rgb(${this.background.r}, ${this.background.g}, ${this.background.b})`;
     ctx.fillRect(0, 0, width, height);
+
+    // Draw map overlay (before obstacles, after background)
+    if (this.showMap) {
+      this._renderMapOverlay();
+    }
 
     // Draw obstacles
     if (this.showObstacles) {
@@ -479,5 +582,39 @@ export class Canvas {
    */
   resetObstacles() {
     WorldState.resetObstacles();
+  }
+
+  /**
+   * Toggle map overlay visibility
+   */
+  toggleMap() {
+    this.showMap = !this.showMap;
+    this._render();
+    return this.showMap;
+  }
+
+  /**
+   * Set map overlay opacity
+   * @param {number} opacity - Opacity value between 0 and 1
+   */
+  setMapOpacity(opacity) {
+    this.mapOpacity = Math.max(0, Math.min(1, opacity));
+    if (this.showMap) {
+      this._render();
+    }
+  }
+
+  /**
+   * Get current map opacity
+   */
+  getMapOpacity() {
+    return this.mapOpacity;
+  }
+
+  /**
+   * Check if map is currently visible
+   */
+  isMapVisible() {
+    return this.showMap;
   }
 }

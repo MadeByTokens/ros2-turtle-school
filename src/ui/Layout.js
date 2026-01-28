@@ -91,10 +91,11 @@ export class Layout {
   }
 
   /**
-   * Toggle the map panel
+   * Toggle the map overlay (dispatches event for Canvas to handle)
    */
   toggleMap() {
-    this.mapContainer?.classList.toggle('hidden');
+    // Dispatch event for Canvas to toggle its map overlay
+    window.dispatchEvent(new CustomEvent('toggle-map-overlay'));
     this._triggerResize();
   }
 

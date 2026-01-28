@@ -234,6 +234,55 @@ input:focus:not(:focus-visible) {
   color: white;
 }
 
+/* Toolbar separator */
+.toolbar-separator {
+  width: 1px;
+  height: 20px;
+  background: var(--border-color);
+  margin: 0 4px;
+}
+
+/* Opacity control in toolbar */
+.opacity-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.opacity-control input[type="range"] {
+  width: 60px;
+  height: 4px;
+  appearance: none;
+  background: var(--bg-primary);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.opacity-control input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--accent-blue);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.opacity-control input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--accent-blue);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+#map-opacity-value {
+  min-width: 32px;
+  text-align: right;
+}
+
 #canvas-container {
   flex-direction: column;
 }

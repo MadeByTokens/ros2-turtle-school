@@ -122,6 +122,9 @@ class App {
     // Obstacle management buttons
     this._setupObstacleButtons();
 
+    // Map overlay buttons
+    this._setupMapOverlayButtons();
+
     // Custom events
     window.addEventListener('toggle-graph', () => {
       this.graph.toggle();
@@ -229,6 +232,36 @@ class App {
 
     addBtn?.classList.toggle('active', mode === 'add');
     deleteBtn?.classList.toggle('active', mode === 'delete');
+  }
+
+  _setupMapOverlayButtons() {
+    const toggleBtn = document.getElementById('toggle-map-overlay');
+    const opacityControl = document.getElementById('map-opacity-control');
+    const opacitySlider = document.getElementById('map-opacity-slider');
+    const opacityValue = document.getElementById('map-opacity-value');
+
+    // Toggle map overlay
+    toggleBtn?.addEventListener('click', () => {
+      const isVisible = this.canvas.toggleMap();
+      toggleBtn.classList.toggle('active', isVisible);
+      opacityControl?.classList.toggle('hidden', !isVisible);
+    });
+
+    // Opacity slider
+    opacitySlider?.addEventListener('input', (e) => {
+      const opacity = parseInt(e.target.value, 10) / 100;
+      this.canvas.setMapOpacity(opacity);
+      if (opacityValue) {
+        opacityValue.textContent = `${e.target.value}%`;
+      }
+    });
+
+    // Listen for toggle-map-overlay event (from Layout.toggleMap)
+    window.addEventListener('toggle-map-overlay', () => {
+      const isVisible = this.canvas.toggleMap();
+      toggleBtn?.classList.toggle('active', isVisible);
+      opacityControl?.classList.toggle('hidden', !isVisible);
+    });
   }
 
   _showRqtModal() {

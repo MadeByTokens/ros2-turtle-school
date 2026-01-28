@@ -26,6 +26,10 @@ export class Terminal {
     this.waitingForInput = false;
     this.focused = false;
 
+    // Teleop state tracking
+    this.teleopActive = false;
+    this.teleopType = null;
+
     // Active continuous commands (echo, pub, etc.)
     this.activeSubscriptions = [];
     this.activeBagRecorders = [];
@@ -88,6 +92,48 @@ export class Terminal {
 
     // Show initial prompt
     this.writePrompt();
+
+    // Listen for teleop events
+    this._setupTeleopListeners();
+  }
+
+  _setupTeleopListeners() {
+    // Listen for teleop activation
+    window.addEventListener('teleop-active', (event) => {
+      this.teleopActive = true;
+      this.teleopType = event.detail?.type || 'wasd-keys';
+    });
+
+    // Listen for teleop deactivation
+    window.addEventListener('teleop-inactive', () => {
+      this.teleopActive = false;
+      this.teleopType = null;
+    });
+  }
+
+  /**
+   * Forward a key to window as a synthetic KeyboardEvent for teleop
+   */
+  _forwardKeyToWindow(key, code) {
+    // Dispatch keydown event
+    const keydownEvent = new KeyboardEvent('keydown', {
+      key,
+      code,
+      bubbles: true,
+      cancelable: true
+    });
+    window.dispatchEvent(keydownEvent);
+
+    // Schedule keyup after a short delay
+    setTimeout(() => {
+      const keyupEvent = new KeyboardEvent('keyup', {
+        key,
+        code,
+        bubbles: true,
+        cancelable: true
+      });
+      window.dispatchEvent(keyupEvent);
+    }, 50);
   }
 
   _handleInput(data) {
@@ -139,6 +185,12 @@ export class Terminal {
 
           // Up arrow
           if (code === 65) {
+            // Forward arrow keys to teleop if active with arrow-keys type
+            if (this.teleopActive && this.teleopType === 'arrow-keys') {
+              this._forwardKeyToWindow('ArrowUp', 'ArrowUp');
+              i += 2;
+              continue;
+            }
             this._historyUp();
             i += 2;
             continue;
@@ -146,6 +198,11 @@ export class Terminal {
 
           // Down arrow
           if (code === 66) {
+            if (this.teleopActive && this.teleopType === 'arrow-keys') {
+              this._forwardKeyToWindow('ArrowDown', 'ArrowDown');
+              i += 2;
+              continue;
+            }
             this._historyDown();
             i += 2;
             continue;
@@ -153,6 +210,11 @@ export class Terminal {
 
           // Right arrow
           if (code === 67) {
+            if (this.teleopActive && this.teleopType === 'arrow-keys') {
+              this._forwardKeyToWindow('ArrowRight', 'ArrowRight');
+              i += 2;
+              continue;
+            }
             this._cursorRight();
             i += 2;
             continue;
@@ -160,6 +222,11 @@ export class Terminal {
 
           // Left arrow
           if (code === 68) {
+            if (this.teleopActive && this.teleopType === 'arrow-keys') {
+              this._forwardKeyToWindow('ArrowLeft', 'ArrowLeft');
+              i += 2;
+              continue;
+            }
             this._cursorLeft();
             i += 2;
             continue;
@@ -191,6 +258,15 @@ export class Terminal {
 
       // Regular character
       if (char >= 32 && char < 127) {
+        // Check for teleop WASD keys when teleop is active
+        if (this.teleopActive && this.teleopType === 'wasd-keys') {
+          const upperChar = data[i].toUpperCase();
+          if ('WASDQE'.includes(upperChar)) {
+            // Forward WASD/QE keys to window for teleop control
+            this._forwardKeyToWindow(upperChar, `Key${upperChar}`);
+            continue; // Skip normal terminal processing
+          }
+        }
         this._insertChar(data[i]);
       }
     }

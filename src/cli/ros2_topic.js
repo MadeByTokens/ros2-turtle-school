@@ -191,21 +191,56 @@ function handleEcho(args, terminal) {
   }
 
   const topicName = args[0];
-  const topicInfo = SimDDS.getTopicInfo(topicName);
+  let topicInfo = SimDDS.getTopicInfo(topicName);
+  let sub = null;
+  let pollInterval = null;
+
+  // Helper to subscribe with correct type
+  const subscribeToTopic = (type) => {
+    // Unsubscribe from previous subscription if any
+    if (sub) {
+      SimDDS.unsubscribe(sub);
+    }
+    sub = SimDDS.subscribe(topicName, type, (msg) => {
+      terminal.writeln('---');
+      terminal.writeln(formatMessage(msg));
+    });
+  };
 
   if (!topicInfo) {
-    terminal.writeln(`\x1b[33mWaiting for topic '${topicName}'...\x1b[0m`);
-  }
+    // Topic doesn't exist yet - show clear message and poll for availability
+    terminal.writeln(`\x1b[33mTopic '${topicName}' does not exist yet.\x1b[0m`);
+    terminal.writeln(`\x1b[33mWill start echoing when a publisher creates it...\x1b[0m`);
 
-  // Subscribe to topic
-  const sub = SimDDS.subscribe(topicName, topicInfo?.type || 'unknown', (msg) => {
-    terminal.writeln('---');
-    terminal.writeln(formatMessage(msg));
-  });
+    // Poll every second to check if topic becomes available
+    pollInterval = setInterval(() => {
+      const newTopicInfo = SimDDS.getTopicInfo(topicName);
+      if (newTopicInfo && newTopicInfo.type !== 'unknown') {
+        // Topic is now available - resubscribe with correct type
+        terminal.writeln(`\x1b[32mTopic '${topicName}' is now available [${newTopicInfo.type}]\x1b[0m`);
+        clearInterval(pollInterval);
+        pollInterval = null;
+        subscribeToTopic(newTopicInfo.type);
+      }
+    }, 1000);
+
+    // Subscribe with unknown type initially (won't receive messages)
+    subscribeToTopic('unknown');
+  } else {
+    // Topic exists - subscribe normally
+    subscribeToTopic(topicInfo.type);
+  }
 
   // Store subscription for Ctrl+C cleanup
   terminal.addSubscription({
-    destroy: () => SimDDS.unsubscribe(sub)
+    destroy: () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+      if (sub) {
+        SimDDS.unsubscribe(sub);
+      }
+    }
   });
 }
 

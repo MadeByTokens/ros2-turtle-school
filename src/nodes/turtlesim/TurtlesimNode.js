@@ -63,8 +63,13 @@ export class TurtlesimNode extends Node {
   }
 
   onShutdown() {
-    // Clear all turtles
-    for (const [name] of this.turtles) {
+    // Clear all turtles and their active action intervals
+    for (const [name, turtle] of this.turtles) {
+      // Clear any active action interval to prevent memory leak
+      if (turtle.activeActionInterval) {
+        clearInterval(turtle.activeActionInterval);
+        turtle.activeActionInterval = null;
+      }
       WorldState.removeTurtle(name);
     }
     this.turtles.clear();
@@ -99,7 +104,9 @@ export class TurtlesimNode extends Node {
         b: 184,
         width: 3,
         off: false
-      }
+      },
+      // Track active action interval for cleanup
+      activeActionInterval: null
     };
 
     this.turtles.set(name, turtle);
@@ -181,6 +188,12 @@ export class TurtlesimNode extends Node {
     const turtle = this.turtles.get(request.name);
     if (!turtle) {
       throw new Error(`Turtle '${request.name}' not found`);
+    }
+
+    // Clear any active action interval to prevent memory leak
+    if (turtle.activeActionInterval) {
+      clearInterval(turtle.activeActionInterval);
+      turtle.activeActionInterval = null;
     }
 
     // Cleanup turtle resources
@@ -312,6 +325,12 @@ export class TurtlesimNode extends Node {
       throw new Error(`Turtle '${turtleName}' not found`);
     }
 
+    // Clear any existing action interval before starting new one
+    if (turtle.activeActionInterval) {
+      clearInterval(turtle.activeActionInterval);
+      turtle.activeActionInterval = null;
+    }
+
     const targetTheta = goal.theta;
     const startTheta = turtle.theta;
 
@@ -329,6 +348,7 @@ export class TurtlesimNode extends Node {
       const interval = setInterval(() => {
         if (isCanceled()) {
           clearInterval(interval);
+          turtle.activeActionInterval = null;
           resolve({ delta: rotated * direction });
           return;
         }
@@ -340,6 +360,7 @@ export class TurtlesimNode extends Node {
           // Done
           turtle.theta = targetTheta;
           clearInterval(interval);
+          turtle.activeActionInterval = null;
           resolve({ delta: totalDelta * direction });
         } else {
           turtle.theta = startTheta + rotated * direction;
@@ -350,6 +371,9 @@ export class TurtlesimNode extends Node {
           feedbackCb({ remaining });
         }
       }, 1000 / 30);
+
+      // Store interval reference for cleanup
+      turtle.activeActionInterval = interval;
     });
   }
 

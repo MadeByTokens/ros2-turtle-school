@@ -57,9 +57,16 @@
             <button id="delete-obstacle-mode" aria-label="Click obstacles to delete">🗑️ Delete</button>
             <button id="clear-obstacles" aria-label="Remove all obstacles">Clear</button>
             <button id="reset-obstacles" aria-label="Reset obstacles to default">Reset</button>
+            <span class="toolbar-separator"></span>
+            <button id="toggle-map-overlay" aria-label="Toggle occupancy map overlay">🗺️ Map</button>
+            <label id="map-opacity-control" class="opacity-control hidden">
+              <input type="range" id="map-opacity-slider" min="0" max="100" value="50" aria-label="Map opacity">
+              <span id="map-opacity-value">50%</span>
+            </label>
           </div>
         </div>
-        <div id="map-container" class="hidden">
+        <!-- Map container hidden - map is now rendered as canvas overlay -->
+        <div id="map-container" class="hidden" style="display: none;">
           <canvas id="map-canvas" width="500" height="500"></canvas>
         </div>
         <div id="graph-container" class="hidden"></div>

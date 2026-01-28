@@ -16,6 +16,8 @@ export class BagPlayer {
     this.timeouts = [];
     this.onComplete = null;
     this.onMessage = null;
+    // Playback ID to guard against stale timeout callbacks after stop/rate change
+    this.playbackId = 0;
   }
 
   /**
@@ -30,6 +32,8 @@ export class BagPlayer {
     this.paused = false;
     this.currentIndex = 0;
     this.playStartTime = Date.now();
+    // Increment playbackId to invalidate any stale callbacks
+    this.playbackId++;
 
     this._scheduleMessages();
   }
@@ -41,11 +45,17 @@ export class BagPlayer {
     // Clear any existing timeouts
     this._clearTimeouts();
 
+    // Capture current playbackId to guard against stale callbacks
+    const currentPlaybackId = this.playbackId;
+
     for (let i = this.currentIndex; i < this.messages.length; i++) {
       const msg = this.messages[i];
       const delay = msg.timestamp / this.rate;
 
       const timeout = setTimeout(() => {
+        // Guard: ignore callback if playbackId changed (stop/rate change occurred)
+        if (currentPlaybackId !== this.playbackId) return;
+
         if (this.playing && !this.paused) {
           this._publishMessage(msg);
           this.currentIndex = i + 1;
@@ -115,11 +125,17 @@ export class BagPlayer {
   _scheduleRemainingMessages() {
     const elapsed = (Date.now() - this.playStartTime) * this.rate;
 
+    // Capture current playbackId to guard against stale callbacks
+    const currentPlaybackId = this.playbackId;
+
     for (let i = this.currentIndex; i < this.messages.length; i++) {
       const msg = this.messages[i];
       const delay = Math.max(0, (msg.timestamp - elapsed) / this.rate);
 
       const timeout = setTimeout(() => {
+        // Guard: ignore callback if playbackId changed (stop/rate change occurred)
+        if (currentPlaybackId !== this.playbackId) return;
+
         if (this.playing && !this.paused) {
           this._publishMessage(msg);
           this.currentIndex = i + 1;
@@ -141,9 +157,12 @@ export class BagPlayer {
    * Stop playback
    */
   stop() {
+    // Clear timeouts BEFORE state changes to prevent race conditions
+    this._clearTimeouts();
+    // Increment playbackId to invalidate any in-flight callbacks
+    this.playbackId++;
     this.playing = false;
     this.paused = false;
-    this._clearTimeouts();
   }
 
   /**
@@ -151,13 +170,14 @@ export class BagPlayer {
    */
   setRate(rate) {
     if (this.playing && !this.paused) {
+      // Clear timeouts and increment playbackId BEFORE rate change to prevent race conditions
+      this._clearTimeouts();
+      this.playbackId++;
       // Recalculate timing for remaining messages
-      const wasPlaying = true;
-      this.pause();
+      this.paused = true;
+      this.pauseTime = Date.now();
       this.rate = rate;
-      if (wasPlaying) {
-        this.resume();
-      }
+      this.resume();
     } else {
       this.rate = rate;
     }

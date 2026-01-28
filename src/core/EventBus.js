@@ -80,7 +80,15 @@ class EventBusClass {
       }
     }
 
-    // Also emit to window for backward compatibility with existing code
+    // DUAL EVENT SYSTEM - Backward Compatibility Note:
+    // We emit to both the EventBus listeners (above) AND window.dispatchEvent (below).
+    // This dual emission is intentional for backward compatibility with existing code
+    // that uses window.addEventListener() directly (e.g., Canvas, Terminal, Layout).
+    // New code should prefer EventBus.on() for cleaner subscription management.
+    // The duplication is acceptable because:
+    // 1. Most events have few listeners, so overhead is minimal
+    // 2. It allows gradual migration without breaking existing functionality
+    // 3. Window events are needed for cross-component communication in some cases
     window.dispatchEvent(new CustomEvent(event, { detail: data }));
   }
 

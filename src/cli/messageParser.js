@@ -26,9 +26,16 @@ export function parseMessage(input) {
 
   try {
     // Try JSON parse first (handles proper JSON)
+    // This is the fast path - JSON.parse is highly optimized in V8
     return JSON.parse(`{${str}}`);
   } catch (e) {
-    // Fall back to custom parser for YAML-like syntax
+    // PERFORMANCE NOTE: YAML-like parser fallback
+    // The parseYamlLike() function below is a character-by-character parser
+    // with O(n) time complexity. For typical ROS2 message sizes (< 1KB),
+    // this is fast enough (< 1ms). For very large messages, consider:
+    // 1. Using proper JSON format in commands when possible
+    // 2. The parser handles nested objects/arrays but allocates intermediate strings
+    // 3. No caching is implemented since messages are typically unique
     return parseYamlLike(str);
   }
 }
