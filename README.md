@@ -4,6 +4,18 @@ Browser-based ROS2 CLI emulator for educational purposes. Runs entirely client-s
 
 **Live demo:** https://madebytokens.github.io/ros2websim/
 
+## Features
+
+- **Full ROS2 CLI** - `ros2 topic`, `ros2 node`, `ros2 service`, `ros2 action`, `ros2 param`, `ros2 bag`
+- **Turtlesim** - Classic turtle simulation with pen drawing and teleop control
+- **SLAM Demo** - Simple occupancy grid mapping with lidar visualization
+- **Node Graph** - Interactive visualization of nodes and topic connections (like rqt_graph)
+- **Map Overlay** - Real-time occupancy grid displayed as canvas overlay with adjustable opacity
+- **Multiple Terminals** - Up to 4 terminal panes with tab management
+- **Teleop Control** - WASD keys work directly from terminal (W/S: forward/back, A/D: turn, Q/E: diagonal)
+- **Bag Recording** - Record and playback topic messages
+- **Copy/Paste Support** - Right-click context menu in terminal
+
 ## Quick Start
 
 ```bash
@@ -58,11 +70,12 @@ src/
 │   ├── parser.js           # Main router
 │   └── ros2_*.js           # Subcommand handlers (self-register)
 └── ui/                 # UI components
-    ├── Terminal.js         # xterm.js wrapper
+    ├── Terminal.js         # xterm.js wrapper with teleop key forwarding
     ├── TerminalManager.js  # Multi-pane support
-    ├── Canvas.js           # Turtle visualization
-    ├── MapCanvas.js        # Occupancy grid
-    ├── Graph.js            # Cytoscape rqt_graph
+    ├── Canvas.js           # Turtle visualization + map overlay
+    ├── MapCanvas.js        # Standalone occupancy grid view
+    ├── Graph.js            # Cytoscape rqt_graph (nodes + topics)
+    ├── Layout.js           # Responsive layout manager
     └── HelpModal.js        # Tabbed help modal
 ```
 
@@ -232,6 +245,29 @@ EventBus.emit('my-event', { foo: 'bar' });
 unsubscribe();
 ```
 
+## SLAM Tutorial
+
+Try the built-in SLAM demonstration:
+
+```bash
+# Terminal 1: Start turtlesim
+ros2 run turtlesim turtlesim_node
+
+# Terminal 2: Start SLAM node
+ros2 run simple_slam slam_node
+
+# Terminal 3: Start teleop
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+
+Click the **Map** button in the canvas toolbar to toggle the occupancy grid overlay. Use the slider to adjust opacity. Drive the turtle around to build a map of the environment.
+
+The SLAM node:
+- Subscribes to `/scan` (lidar) and `/turtle1/pose`
+- Publishes occupancy grid to `/map`
+- Uses log-odds Bayesian updating
+- Color coding: green = free, red = occupied, blue-gray = unknown
+
 ## Testing
 
 Open browser console for debug output. All nodes log via `LogManager`.
@@ -245,6 +281,23 @@ this.logError('error');
 ```
 
 View logs: run `rqt_console` in terminal.
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Ctrl+C` | Interrupt running command |
+| `Ctrl+L` | Clear terminal |
+| `↑` / `↓` | Command history |
+| Right-click | Copy/Paste/Clear menu |
+
+**Teleop controls** (when teleop node is running):
+| Key | Action |
+|-----|--------|
+| `W` / `S` | Forward / Backward |
+| `A` / `D` | Turn left / Turn right |
+| `Q` / `E` | Diagonal (forward + turn) |
+| `X` | Stop |
 
 ## Limitations
 
