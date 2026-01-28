@@ -4,7 +4,16 @@ export default defineConfig({
   base: '/ros2websim/',
   build: {
     outDir: 'dist',
-    sourcemap: true
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split large vendor libraries into separate chunks
+          'vendor-xterm': ['xterm', '@xterm/addon-fit'],
+          'vendor-cytoscape': ['cytoscape']
+        }
+      }
+    }
   },
   server: {
     port: 3000,
