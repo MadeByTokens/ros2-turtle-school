@@ -266,6 +266,9 @@ export class Graph {
     // Show canvas again
     const canvasContainer = document.getElementById('canvas-container');
     canvasContainer?.classList.remove('hidden');
+
+    // Trigger resize so canvas recalculates its size
+    window.dispatchEvent(new Event('layout-resize'));
   }
 
   /**

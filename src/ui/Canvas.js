@@ -188,6 +188,9 @@ export class Canvas {
       if (!container) return;
 
       const rect = container.getBoundingClientRect();
+      // Don't resize if container is hidden (rect would be all zeros)
+      if (rect.width === 0 || rect.height === 0) return;
+
       const size = Math.min(rect.width, rect.height, 500);
 
       this.canvas.width = size;
@@ -235,27 +238,49 @@ export class Canvas {
     const mapCtx = this.mapCanvas.getContext('2d');
     const imageData = mapCtx.createImageData(width, height);
 
-    // Render occupancy grid data to image
-    for (let i = 0; i < this.mapData.length; i++) {
-      const value = this.mapData[i];
-      let gray;
+    // Render occupancy grid data to image with distinct colors
+    // Note: Grid data is stored with Y=0 at bottom (world space)
+    // Image pixels have Y=0 at top, so we flip Y when writing
+    for (let gridY = 0; gridY < height; gridY++) {
+      for (let gridX = 0; gridX < width; gridX++) {
+        const gridIndex = gridY * width + gridX;
+        const value = this.mapData[gridIndex];
 
-      if (value === -1) {
-        // Unknown - dark gray
-        gray = 128;
-      } else if (value === 0) {
-        // Free space - light/white
-        gray = 255;
-      } else {
-        // Occupied - scale from gray to black (0-100 -> 200-0)
-        gray = Math.max(0, 200 - (value * 2));
+        // Flip Y: grid row 0 (world bottom) -> image row (height-1) (image bottom)
+        const imageY = height - 1 - gridY;
+        const pixelIndex = (imageY * width + gridX) * 4;
+
+        let r, g, b;
+
+        if (value === -1) {
+          // Unknown - transparent blue-gray (will blend with background)
+          r = 100;
+          g = 100;
+          b = 120;
+        } else if (value <= 10) {
+          // Free space - white/light green tint
+          r = 220;
+          g = 255;
+          b = 220;
+        } else if (value >= 65) {
+          // Definitely occupied - strong red/dark
+          const intensity = Math.min(100, value);
+          r = 180 - intensity;  // Gets darker red as more occupied
+          g = 20;
+          b = 20;
+        } else {
+          // Partially occupied - orange to red gradient (11-64)
+          const t = (value - 10) / 55; // 0 to 1
+          r = Math.round(255 - t * 75);  // 255 -> 180
+          g = Math.round(180 - t * 160); // 180 -> 20
+          b = Math.round(100 - t * 80);  // 100 -> 20
+        }
+
+        imageData.data[pixelIndex] = r;
+        imageData.data[pixelIndex + 1] = g;
+        imageData.data[pixelIndex + 2] = b;
+        imageData.data[pixelIndex + 3] = 255;
       }
-
-      const pixelIndex = i * 4;
-      imageData.data[pixelIndex] = gray;     // R
-      imageData.data[pixelIndex + 1] = gray; // G
-      imageData.data[pixelIndex + 2] = gray; // B
-      imageData.data[pixelIndex + 3] = 255;  // A
     }
 
     mapCtx.putImageData(imageData, 0, 0);
@@ -282,15 +307,13 @@ export class Canvas {
     const worldMapWidth = mapWidth * resolution;
     const worldMapHeight = mapHeight * resolution;
 
-    // Convert to canvas coordinates
+    // Convert origin to canvas coordinates (Y-flip already handled in _updateMapCanvas)
     const canvasOrigin = this._worldToCanvas(originX, originY + worldMapHeight);
     const canvasWidth = this._worldToCanvasScale(worldMapWidth);
     const canvasHeight = this._worldToCanvasScale(worldMapHeight);
 
-    // Draw the map (flip vertically since occupancy grid Y is bottom-up)
-    ctx.translate(canvasOrigin.x, canvasOrigin.y);
-    ctx.scale(1, -1);
-    ctx.drawImage(this.mapCanvas, 0, -canvasHeight, canvasWidth, canvasHeight);
+    // Draw the map directly (Y already flipped in _updateMapCanvas)
+    ctx.drawImage(this.mapCanvas, canvasOrigin.x, canvasOrigin.y, canvasWidth, canvasHeight);
 
     // Restore context state
     ctx.restore();
