@@ -299,21 +299,12 @@ export class Canvas {
     ctx.save();
     ctx.globalAlpha = this.mapOpacity;
 
-    // Calculate map position and size in canvas coordinates
-    const originX = origin?.position?.x || 0;
-    const originY = origin?.position?.y || 0;
+    // Disable image smoothing for crisp pixel rendering
+    ctx.imageSmoothingEnabled = false;
 
-    // Map covers mapWidth * resolution in world units
-    const worldMapWidth = mapWidth * resolution;
-    const worldMapHeight = mapHeight * resolution;
-
-    // Convert origin to canvas coordinates (Y-flip already handled in _updateMapCanvas)
-    const canvasOrigin = this._worldToCanvas(originX, originY + worldMapHeight);
-    const canvasWidth = this._worldToCanvasScale(worldMapWidth);
-    const canvasHeight = this._worldToCanvasScale(worldMapHeight);
-
-    // Draw the map directly (Y already flipped in _updateMapCanvas)
-    ctx.drawImage(this.mapCanvas, canvasOrigin.x, canvasOrigin.y, canvasWidth, canvasHeight);
+    // The map covers the entire world (0,0) to (worldWidth, worldHeight)
+    // Draw it to fill the entire canvas
+    ctx.drawImage(this.mapCanvas, 0, 0, this.canvas.width, this.canvas.height);
 
     // Restore context state
     ctx.restore();

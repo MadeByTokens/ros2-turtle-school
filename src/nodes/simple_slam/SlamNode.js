@@ -116,12 +116,19 @@ export class SlamNode extends Node {
         continue;
       }
 
+      const isHit = range < range_max - 0.1;
+
+      // For hits, offset the endpoint slightly backward along the ray
+      // This ensures the occupied mark lands in the cell AT the obstacle edge,
+      // not inside the obstacle (due to Math.floor in grid conversion)
+      const effectiveRange = isHit ? Math.max(0, range - this.resolution * 0.5) : range;
+
       // End point of ray
-      const hitX = this.robotX + Math.cos(angle) * range;
-      const hitY = this.robotY + Math.sin(angle) * range;
+      const hitX = this.robotX + Math.cos(angle) * effectiveRange;
+      const hitY = this.robotY + Math.sin(angle) * effectiveRange;
 
       // Ray trace from robot to hit point
-      this._rayTrace(this.robotX, this.robotY, hitX, hitY, range < range_max - 0.1);
+      this._rayTrace(this.robotX, this.robotY, hitX, hitY, isHit);
     }
   }
 
@@ -135,44 +142,62 @@ export class SlamNode extends Node {
     const gx1 = this._worldToGridX(x1);
     const gy1 = this._worldToGridY(y1);
 
-    // Bresenham's line algorithm
+    // Use DDA (Digital Differential Analyzer) for more accurate ray tracing
+    const dx = gx1 - gx0;
+    const dy = gy1 - gy0;
+    const steps = Math.max(Math.abs(dx), Math.abs(dy));
+
+    if (steps === 0) {
+      // Start and end in same cell
+      if (gx0 >= 0 && gx0 < this.gridWidth && gy0 >= 0 && gy0 < this.gridHeight) {
+        const idx = gy0 * this.gridWidth + gx0;
+        if (hit) {
+          this.grid[idx] = Math.min(this.lMax, this.grid[idx] + this.lOcc);
+        }
+      }
+      return;
+    }
+
+    const xIncrement = dx / steps;
+    const yIncrement = dy / steps;
+
     let x = gx0;
     let y = gy0;
-    const dx = Math.abs(gx1 - gx0);
-    const dy = Math.abs(gy1 - gy0);
-    const sx = gx0 < gx1 ? 1 : -1;
-    const sy = gy0 < gy1 ? 1 : -1;
-    let err = dx - dy;
+    let lastGridX = -1;
+    let lastGridY = -1;
 
-    while (true) {
+    for (let i = 0; i <= steps; i++) {
+      const gridX = Math.round(x);
+      const gridY = Math.round(y);
+
+      // Skip if same cell as last iteration
+      if (gridX === lastGridX && gridY === lastGridY) {
+        x += xIncrement;
+        y += yIncrement;
+        continue;
+      }
+
+      lastGridX = gridX;
+      lastGridY = gridY;
+
       // Check bounds
-      if (x >= 0 && x < this.gridWidth && y >= 0 && y < this.gridHeight) {
-        const idx = y * this.gridWidth + x;
+      if (gridX >= 0 && gridX < this.gridWidth && gridY >= 0 && gridY < this.gridHeight) {
+        const idx = gridY * this.gridWidth + gridX;
 
         // Is this the endpoint?
-        if (x === gx1 && y === gy1) {
+        if (i === steps) {
           if (hit) {
             // Mark as occupied
             this.grid[idx] = Math.min(this.lMax, this.grid[idx] + this.lOcc);
           }
-          break;
         } else {
           // Mark as free (ray passed through)
           this.grid[idx] = Math.max(this.lMin, this.grid[idx] + this.lFree);
         }
       }
 
-      if (x === gx1 && y === gy1) break;
-
-      const e2 = 2 * err;
-      if (e2 > -dy) {
-        err -= dy;
-        x += sx;
-      }
-      if (e2 < dx) {
-        err += dx;
-        y += sy;
-      }
+      x += xIncrement;
+      y += yIncrement;
     }
   }
 
