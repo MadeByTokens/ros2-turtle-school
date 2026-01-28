@@ -31,7 +31,7 @@ class App {
     this.graph = null;
     this.rqtConsole = null;
     this.layout = null;
-    this.logger = LogManager.getLogger('/ros2websim');
+    this.logger = LogManager.getLogger('/ros2_turtle_school');
   }
 
   /**

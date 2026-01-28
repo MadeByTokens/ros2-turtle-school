@@ -30,7 +30,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000/ros2websim/
+Open http://localhost:3000/ros2-turtle-school/
 
 ## Build & Deploy
 
