@@ -43,7 +43,7 @@ export class TeleopTwistKeyboardNode extends Node {
     this.createTimer(100, this._publishVelocity.bind(this));
 
     this.logInfo('Teleop Twist Keyboard started.');
-    this.logInfo('Use WASD keys to move, Q/E to rotate, X to stop.');
+    this.logInfo('W/S: forward/back, A/D: turn, Q/E: diagonal, X: stop');
     this.logInfo(`Publishing to: ${this.targetTopic}`);
 
     // Dispatch event to show keyboard hint
@@ -133,8 +133,7 @@ export class TeleopTwistKeyboardNode extends Node {
       linear -= this.currentSpeed;
     }
 
-    // Strafe (not used in differential drive, but included for completeness)
-    // In turtlesim this would be ignored
+    // Pure rotation (A = turn left, D = turn right)
     if (this.activeKeys.has('a')) {
       angular += this.currentTurn;
     }
@@ -142,11 +141,13 @@ export class TeleopTwistKeyboardNode extends Node {
       angular -= this.currentTurn;
     }
 
-    // Pure rotation
+    // Diagonal movement (Q = forward + turn left, E = forward + turn right)
     if (this.activeKeys.has('q')) {
+      linear += this.currentSpeed;
       angular += this.currentTurn;
     }
     if (this.activeKeys.has('e')) {
+      linear += this.currentSpeed;
       angular -= this.currentTurn;
     }
 
