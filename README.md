@@ -1,4 +1,4 @@
-# ROS2 Web Emulator
+# <img src="logo.png" width="32" height="32" alt="logo" /> ROS 2 Turtle School
 
 Browser-based ROS2 CLI emulator for educational purposes. Runs entirely client-side.
 

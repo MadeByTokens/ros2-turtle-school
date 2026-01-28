@@ -21,7 +21,7 @@ export class HelpModal {
 
     if (!this.modal || !this.body) return;
 
-    title.textContent = 'ROS2 Web Emulator - Help';
+    title.textContent = 'ROS 2 Turtle School - Help';
     this.body.innerHTML = this._renderTabs() + this._renderContent();
 
     this._setupTabListeners();

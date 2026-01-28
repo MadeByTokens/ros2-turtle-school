@@ -1,5 +1,5 @@
 /**
- * ROS2 Web Emulator - Main Application Entry
+ * ROS 2 Turtle School - Main Application Entry
  */
 
 import { TerminalManager } from './ui/TerminalManager.js';
@@ -38,7 +38,7 @@ class App {
    * Initialize the application
    */
   init() {
-    this.logger.info('Initializing ROS2 Web Emulator...');
+    this.logger.info('Initializing ROS 2 Turtle School...');
 
     // Initialize layout manager
     this.layout = new Layout();
@@ -74,7 +74,7 @@ class App {
     if (terminal) {
       terminal.writeln('');
       terminal.writeln('\x1b[32m╔══════════════════════════════════════════════════════════════╗\x1b[0m');
-      terminal.writeln('\x1b[32m║           ROS2 Web Emulator - Educational Version            ║\x1b[0m');
+      terminal.writeln('\x1b[32m║                    ROS 2 Turtle School                       ║\x1b[0m');
       terminal.writeln('\x1b[32m╚══════════════════════════════════════════════════════════════╝\x1b[0m');
       terminal.writeln('');
       terminal.writeln('Welcome! This is a browser-based ROS2 CLI emulator.');
@@ -91,7 +91,7 @@ class App {
       terminal.finishCommand();
     }
 
-    this.logger.info('ROS2 Web Emulator initialized');
+    this.logger.info('ROS 2 Turtle School initialized');
   }
 
   _setupEventListeners() {
