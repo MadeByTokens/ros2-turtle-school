@@ -1,4 +1,5 @@
 import { Node } from '../../core/Node.js';
+import { nodeRegistry } from '../registry.js';
 
 /**
  * SlamNode - Simple occupancy grid mapping for educational purposes
@@ -243,3 +244,6 @@ export class SlamNode extends Node {
     this.grid = null;
   }
 }
+
+// Self-register with the node registry
+nodeRegistry.register('simple_slam', 'slam_node', SlamNode);

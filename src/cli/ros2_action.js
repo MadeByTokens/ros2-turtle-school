@@ -1,6 +1,7 @@
 import { SimDDS } from '../core/SimDDS.js';
 import { parseMessage, formatMessage } from './messageParser.js';
 import { getAction, findActions } from '../msgs/index.js';
+import { commandRegistry } from './commandRegistry.js';
 
 /**
  * Handle ros2 action commands
@@ -206,5 +207,8 @@ async function handleSendGoal(args, terminal) {
     terminal.writeln(`\x1b[31mAction failed: ${err.message}\x1b[0m`);
   }
 }
+
+// Self-register with the command registry
+commandRegistry.registerRos2('action', handleRos2Action);
 
 export default { handleRos2Action };

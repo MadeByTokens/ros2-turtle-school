@@ -2,6 +2,8 @@
  * nav_msgs - Navigation-related ROS2 message types
  */
 
+import { messageRegistry } from './registry.js';
+
 export const MapMetaData = {
   name: 'nav_msgs/msg/MapMetaData',
   fields: {
@@ -95,6 +97,12 @@ export const Path = {
 std_msgs/Header header
 geometry_msgs/PoseStamped[] poses`
 };
+
+// Self-register all message types
+messageRegistry.registerMessage('nav_msgs/msg/MapMetaData', MapMetaData);
+messageRegistry.registerMessage('nav_msgs/msg/OccupancyGrid', OccupancyGrid);
+messageRegistry.registerMessage('nav_msgs/msg/Odometry', Odometry);
+messageRegistry.registerMessage('nav_msgs/msg/Path', Path);
 
 // Export all message types
 export default {

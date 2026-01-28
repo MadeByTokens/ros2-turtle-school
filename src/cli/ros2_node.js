@@ -1,5 +1,6 @@
 import { SimDDS } from '../core/SimDDS.js';
 import { ProcessManager } from '../core/ProcessManager.js';
+import { commandRegistry } from './commandRegistry.js';
 
 /**
  * Handle ros2 node commands
@@ -133,5 +134,8 @@ function handleInfo(args, terminal) {
   terminal.writeln('  Action Clients:');
   terminal.writeln('    (none)');
 }
+
+// Self-register with the command registry
+commandRegistry.registerRos2('node', handleRos2Node);
 
 export default { handleRos2Node };

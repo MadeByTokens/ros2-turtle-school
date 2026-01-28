@@ -2,6 +2,8 @@
  * turtlesim_msgs - Turtlesim-specific message types
  */
 
+import { messageRegistry } from './registry.js';
+
 export const Pose = {
   name: 'turtlesim/msg/Pose',
   fields: {
@@ -44,6 +46,10 @@ uint8 r
 uint8 g
 uint8 b`
 };
+
+// Self-register all message types
+messageRegistry.registerMessage('turtlesim/msg/Pose', Pose);
+messageRegistry.registerMessage('turtlesim/msg/Color', Color);
 
 // Export all message types
 export default {

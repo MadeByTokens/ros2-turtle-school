@@ -1,5 +1,6 @@
 import { Node } from '../../core/Node.js';
 import { TFBuffer } from '../../core/TFBuffer.js';
+import { nodeRegistry } from '../registry.js';
 
 /**
  * StaticTransformPublisher - Publishes static transforms
@@ -113,3 +114,6 @@ export class StaticTransformPublisher extends Node {
     this.logInfo(`  Rotation: (${this.transform.rotation.x}, ${this.transform.rotation.y}, ${this.transform.rotation.z}, ${this.transform.rotation.w})`);
   }
 }
+
+// Self-register with the node registry
+nodeRegistry.register('tf2_ros', 'static_transform_publisher', StaticTransformPublisher);

@@ -2,6 +2,8 @@
  * turtlesim_srvs - Turtlesim service definitions
  */
 
+import { messageRegistry } from './registry.js';
+
 export const Spawn = {
   name: 'turtlesim/srv/Spawn',
   type: 'service',
@@ -116,6 +118,13 @@ float32 linear
 float32 angular
 ---`
 };
+
+// Self-register all service types
+messageRegistry.registerService('turtlesim/srv/Spawn', Spawn);
+messageRegistry.registerService('turtlesim/srv/Kill', Kill);
+messageRegistry.registerService('turtlesim/srv/SetPen', SetPen);
+messageRegistry.registerService('turtlesim/srv/TeleportAbsolute', TeleportAbsolute);
+messageRegistry.registerService('turtlesim/srv/TeleportRelative', TeleportRelative);
 
 // Export all service types
 export default {

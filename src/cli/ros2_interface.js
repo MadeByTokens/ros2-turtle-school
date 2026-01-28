@@ -1,4 +1,5 @@
 import { getInterface, getDefinition, listMessages, listServices, listActions } from '../msgs/index.js';
+import { commandRegistry } from './commandRegistry.js';
 
 /**
  * Handle ros2 interface commands
@@ -133,5 +134,8 @@ function handlePackage(args, terminal) {
     terminal.writeln(action);
   }
 }
+
+// Self-register with the command registry
+commandRegistry.registerRos2('interface', handleRos2Interface);
 
 export default { handleRos2Interface };

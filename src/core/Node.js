@@ -203,39 +203,23 @@ export class Node {
     this.running = false;
     this.onShutdown();
 
-    // Cancel all timers
+    // Cancel all timers (timers are local, not managed by SimDDS)
     for (const timerId of this.timers) {
       clearInterval(timerId);
     }
     this.timers = [];
 
-    // Destroy all publishers
-    for (const pub of this.publishers) {
-      pub.destroy();
-    }
+    // Log before unregister so the logger still works
+    this.logInfo('Node destroyed');
+
+    // Clear local arrays without calling individual destroy() methods.
+    // SimDDS.unregisterNode() owns the comm cleanup to avoid double-cleanup.
     this.publishers = [];
-
-    // Destroy all subscriptions
-    for (const sub of this.subscriptions) {
-      sub.destroy();
-    }
     this.subscriptions = [];
-
-    // Destroy all services
-    for (const srv of this.services) {
-      srv.destroy();
-    }
     this.services = [];
-
-    // Destroy all action servers
-    for (const action of this.actionServers) {
-      action.destroy();
-    }
     this.actionServers = [];
 
-    // Unregister from DDS
+    // Unregister from DDS (handles all comm cleanup)
     SimDDS.unregisterNode(this.fullName);
-
-    this.logInfo('Node destroyed');
   }
 }

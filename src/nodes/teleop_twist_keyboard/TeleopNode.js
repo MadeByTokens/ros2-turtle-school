@@ -1,4 +1,5 @@
 import { Node } from '../../core/Node.js';
+import { nodeRegistry } from '../registry.js';
 
 /**
  * TeleopTwistKeyboardNode - General keyboard teleop using WASD keys
@@ -161,3 +162,6 @@ export class TeleopTwistKeyboardNode extends Node {
     }
   }
 }
+
+// Self-register with the node registry
+nodeRegistry.register('teleop_twist_keyboard', 'teleop_twist_keyboard', TeleopTwistKeyboardNode);

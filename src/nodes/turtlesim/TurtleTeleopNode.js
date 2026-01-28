@@ -1,4 +1,5 @@
 import { Node } from '../../core/Node.js';
+import { nodeRegistry } from '../registry.js';
 
 /**
  * TurtleTeleopNode - Keyboard teleop for turtlesim using arrow keys
@@ -106,3 +107,6 @@ export class TurtleTeleopNode extends Node {
     }
   }
 }
+
+// Self-register with the node registry
+nodeRegistry.register('turtlesim', 'turtle_teleop_key', TurtleTeleopNode);

@@ -2,6 +2,8 @@
  * std_msgs - Standard ROS2 message types
  */
 
+import { messageRegistry } from './registry.js';
+
 export const Header = {
   name: 'std_msgs/msg/Header',
   fields: {
@@ -116,6 +118,17 @@ float32 g
 float32 b
 float32 a`
 };
+
+// Self-register all message types
+messageRegistry.registerMessage('std_msgs/msg/Header', Header);
+messageRegistry.registerMessage('std_msgs/msg/String', String);
+messageRegistry.registerMessage('std_msgs/msg/Bool', Bool);
+messageRegistry.registerMessage('std_msgs/msg/Int32', Int32);
+messageRegistry.registerMessage('std_msgs/msg/Int64', Int64);
+messageRegistry.registerMessage('std_msgs/msg/Float32', Float32);
+messageRegistry.registerMessage('std_msgs/msg/Float64', Float64);
+messageRegistry.registerMessage('std_msgs/msg/Empty', Empty);
+messageRegistry.registerMessage('std_msgs/msg/ColorRGBA', ColorRGBA);
 
 // Export all message types
 export default {

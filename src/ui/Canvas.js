@@ -22,6 +22,9 @@ export class Canvas {
     this.showLidar = false;
     this.showTF = false;
 
+    // Resize debounce guard
+    this._resizeScheduled = false;
+
     // Edit mode: 'none', 'add', 'delete'
     this.editMode = 'none';
     this.newObstacleSize = 1.0;
@@ -31,6 +34,7 @@ export class Canvas {
     this.trails = [];
     this.background = { r: 69, g: 86, b: 255 };
     this.lidarData = null;
+    this.hasTurtlesim = false;
 
     // Set up event listeners
     this._setupEventListeners();
@@ -85,6 +89,7 @@ export class Canvas {
       this.turtles = turtles;
       this.trails = trails;
       this.background = background;
+      this.hasTurtlesim = turtles && turtles.length > 0;
       this._render();
     });
 
@@ -157,16 +162,21 @@ export class Canvas {
   }
 
   _handleResize() {
-    const container = this.canvas.parentElement;
-    if (!container) return;
+    if (this._resizeScheduled) return;
+    this._resizeScheduled = true;
+    requestAnimationFrame(() => {
+      this._resizeScheduled = false;
+      const container = this.canvas.parentElement;
+      if (!container) return;
 
-    const rect = container.getBoundingClientRect();
-    const size = Math.min(rect.width, rect.height, 500);
+      const rect = container.getBoundingClientRect();
+      const size = Math.min(rect.width, rect.height, 500);
 
-    this.canvas.width = size;
-    this.canvas.height = size;
+      this.canvas.width = size;
+      this.canvas.height = size;
 
-    this._render();
+      this._render();
+    });
   }
 
   /**
@@ -205,6 +215,12 @@ export class Canvas {
       this._renderObstacles();
     }
 
+    // If no turtlesim running, show empty state hint
+    if (!this.hasTurtlesim) {
+      this._renderEmptyState();
+      return;
+    }
+
     // Draw trails
     this._renderTrails();
 
@@ -220,6 +236,32 @@ export class Canvas {
     if (this.showTF) {
       this._renderTFFrames();
     }
+  }
+
+  /**
+   * Render empty state hint when no turtlesim is running
+   */
+  _renderEmptyState() {
+    const ctx = this.ctx;
+    const width = this.canvas.width;
+    const height = this.canvas.height;
+
+    // Semi-transparent overlay
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(0, 0, width, height);
+
+    // Text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const text = 'Run: ros2 run turtlesim turtlesim_node';
+    ctx.fillText(text, width / 2, height / 2);
+
+    ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.fillText('to start the simulation', width / 2, height / 2 + 20);
   }
 
   _renderObstacles() {

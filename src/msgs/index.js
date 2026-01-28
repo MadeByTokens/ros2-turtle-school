@@ -1,7 +1,17 @@
 /**
  * Message Registry - Central registry for all ROS2 message, service, and action types
+ *
+ * This file imports all message modules (triggering self-registration) and re-exports
+ * the registry methods for use by other parts of the codebase.
  */
 
+// Import all message modules to trigger registration
+import './loader.js';
+
+// Import the registry
+import { messageRegistry } from './registry.js';
+
+// Re-export individual modules for backward compatibility
 import std_msgs from './std_msgs.js';
 import geometry_msgs from './geometry_msgs.js';
 import turtlesim_msgs from './turtlesim_msgs.js';
@@ -11,69 +21,13 @@ import tf2_msgs from './tf2_msgs.js';
 import sensor_msgs from './sensor_msgs.js';
 import nav_msgs from './nav_msgs.js';
 
-// All message types registry
-const messages = {
-  // std_msgs
-  'std_msgs/msg/Header': std_msgs.Header,
-  'std_msgs/msg/String': std_msgs.String,
-  'std_msgs/msg/Bool': std_msgs.Bool,
-  'std_msgs/msg/Int32': std_msgs.Int32,
-  'std_msgs/msg/Int64': std_msgs.Int64,
-  'std_msgs/msg/Float32': std_msgs.Float32,
-  'std_msgs/msg/Float64': std_msgs.Float64,
-  'std_msgs/msg/Empty': std_msgs.Empty,
-  'std_msgs/msg/ColorRGBA': std_msgs.ColorRGBA,
-
-  // geometry_msgs
-  'geometry_msgs/msg/Vector3': geometry_msgs.Vector3,
-  'geometry_msgs/msg/Point': geometry_msgs.Point,
-  'geometry_msgs/msg/Quaternion': geometry_msgs.Quaternion,
-  'geometry_msgs/msg/Pose': geometry_msgs.Pose,
-  'geometry_msgs/msg/PoseStamped': geometry_msgs.PoseStamped,
-  'geometry_msgs/msg/Twist': geometry_msgs.Twist,
-  'geometry_msgs/msg/TwistStamped': geometry_msgs.TwistStamped,
-  'geometry_msgs/msg/Transform': geometry_msgs.Transform,
-  'geometry_msgs/msg/TransformStamped': geometry_msgs.TransformStamped,
-
-  // turtlesim
-  'turtlesim/msg/Pose': turtlesim_msgs.Pose,
-  'turtlesim/msg/Color': turtlesim_msgs.Color,
-
-  // tf2_msgs
-  'tf2_msgs/msg/TFMessage': tf2_msgs.TFMessage,
-
-  // sensor_msgs
-  'sensor_msgs/msg/LaserScan': sensor_msgs.LaserScan,
-  'sensor_msgs/msg/Imu': sensor_msgs.Imu,
-
-  // nav_msgs
-  'nav_msgs/msg/MapMetaData': nav_msgs.MapMetaData,
-  'nav_msgs/msg/OccupancyGrid': nav_msgs.OccupancyGrid,
-  'nav_msgs/msg/Odometry': nav_msgs.Odometry,
-  'nav_msgs/msg/Path': nav_msgs.Path
-};
-
-// All service types registry
-const services = {
-  'turtlesim/srv/Spawn': turtlesim_srvs.Spawn,
-  'turtlesim/srv/Kill': turtlesim_srvs.Kill,
-  'turtlesim/srv/SetPen': turtlesim_srvs.SetPen,
-  'turtlesim/srv/TeleportAbsolute': turtlesim_srvs.TeleportAbsolute,
-  'turtlesim/srv/TeleportRelative': turtlesim_srvs.TeleportRelative
-};
-
-// All action types registry
-const actions = {
-  'turtlesim/action/RotateAbsolute': turtlesim_actions.RotateAbsolute
-};
-
 /**
  * Get a message type definition
  * @param {string} typeName - Full message type name (e.g., 'geometry_msgs/msg/Twist')
  * @returns {Object|null} Message definition or null if not found
  */
 export function getMessage(typeName) {
-  return messages[typeName] || null;
+  return messageRegistry.getMessage(typeName);
 }
 
 /**
@@ -82,7 +36,7 @@ export function getMessage(typeName) {
  * @returns {Object|null} Service definition or null if not found
  */
 export function getService(typeName) {
-  return services[typeName] || null;
+  return messageRegistry.getService(typeName);
 }
 
 /**
@@ -91,7 +45,7 @@ export function getService(typeName) {
  * @returns {Object|null} Action definition or null if not found
  */
 export function getAction(typeName) {
-  return actions[typeName] || null;
+  return messageRegistry.getAction(typeName);
 }
 
 /**
@@ -100,7 +54,7 @@ export function getAction(typeName) {
  * @returns {Object|null} Interface definition or null if not found
  */
 export function getInterface(typeName) {
-  return messages[typeName] || services[typeName] || actions[typeName] || null;
+  return messageRegistry.getInterface(typeName);
 }
 
 /**
@@ -108,7 +62,7 @@ export function getInterface(typeName) {
  * @returns {string[]} Array of message type names
  */
 export function listMessages() {
-  return Object.keys(messages);
+  return messageRegistry.listMessages();
 }
 
 /**
@@ -116,7 +70,7 @@ export function listMessages() {
  * @returns {string[]} Array of service type names
  */
 export function listServices() {
-  return Object.keys(services);
+  return messageRegistry.listServices();
 }
 
 /**
@@ -124,7 +78,7 @@ export function listServices() {
  * @returns {string[]} Array of action type names
  */
 export function listActions() {
-  return Object.keys(actions);
+  return messageRegistry.listActions();
 }
 
 /**
@@ -133,8 +87,7 @@ export function listActions() {
  * @returns {string[]} Matching type names
  */
 export function findMessages(pattern) {
-  const regex = new RegExp(pattern, 'i');
-  return Object.keys(messages).filter(name => regex.test(name));
+  return messageRegistry.findMessages(pattern);
 }
 
 /**
@@ -143,8 +96,7 @@ export function findMessages(pattern) {
  * @returns {string[]} Matching type names
  */
 export function findServices(pattern) {
-  const regex = new RegExp(pattern, 'i');
-  return Object.keys(services).filter(name => regex.test(name));
+  return messageRegistry.findServices(pattern);
 }
 
 /**
@@ -153,8 +105,7 @@ export function findServices(pattern) {
  * @returns {string[]} Matching type names
  */
 export function findActions(pattern) {
-  const regex = new RegExp(pattern, 'i');
-  return Object.keys(actions).filter(name => regex.test(name));
+  return messageRegistry.findActions(pattern);
 }
 
 /**
@@ -164,26 +115,7 @@ export function findActions(pattern) {
  * @returns {{ valid: boolean, errors: string[] }}
  */
 export function validateMessage(typeName, message) {
-  const msgDef = messages[typeName];
-  if (!msgDef) {
-    return { valid: false, errors: [`Unknown message type: ${typeName}`] };
-  }
-
-  const errors = [];
-
-  for (const [field, fieldDef] of Object.entries(msgDef.fields || {})) {
-    if (message[field] === undefined) {
-      // Field missing but has default - OK
-      if (fieldDef.default === undefined) {
-        errors.push(`Missing required field: ${field}`);
-      }
-    }
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors
-  };
+  return messageRegistry.validateMessage(typeName, message);
 }
 
 /**
@@ -193,11 +125,7 @@ export function validateMessage(typeName, message) {
  * @returns {Object|null} Created message or null if type not found
  */
 export function createMessage(typeName, data = {}) {
-  const msgDef = messages[typeName];
-  if (!msgDef || !msgDef.create) {
-    return null;
-  }
-  return msgDef.create(data);
+  return messageRegistry.createMessage(typeName, data);
 }
 
 /**
@@ -206,12 +134,14 @@ export function createMessage(typeName, data = {}) {
  * @returns {string|null} Definition string or null if not found
  */
 export function getDefinition(typeName) {
-  const iface = getInterface(typeName);
-  return iface?.definition || null;
+  return messageRegistry.getDefinition(typeName);
 }
 
 // Export modules for direct access
 export { std_msgs, geometry_msgs, turtlesim_msgs, turtlesim_srvs, turtlesim_actions, tf2_msgs, sensor_msgs, nav_msgs };
+
+// Export the registry for advanced use
+export { messageRegistry };
 
 // Default export
 export default {
@@ -228,7 +158,5 @@ export default {
   validateMessage,
   createMessage,
   getDefinition,
-  messages,
-  services,
-  actions
+  messageRegistry
 };

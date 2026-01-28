@@ -2,6 +2,8 @@
  * turtlesim_actions - Turtlesim action definitions
  */
 
+import { messageRegistry } from './registry.js';
+
 export const RotateAbsolute = {
   name: 'turtlesim/action/RotateAbsolute',
   type: 'action',
@@ -33,6 +35,9 @@ float32 delta
 # Feedback
 float32 remaining`
 };
+
+// Self-register all action types
+messageRegistry.registerAction('turtlesim/action/RotateAbsolute', RotateAbsolute);
 
 // Export all action types
 export default {

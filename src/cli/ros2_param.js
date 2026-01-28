@@ -1,5 +1,6 @@
 import { SimDDS } from '../core/SimDDS.js';
 import { ProcessManager } from '../core/ProcessManager.js';
+import { commandRegistry } from './commandRegistry.js';
 
 /**
  * Handle ros2 param commands
@@ -252,5 +253,8 @@ function formatValue(value) {
   }
   return String(value);
 }
+
+// Self-register with the command registry
+commandRegistry.registerRos2('param', handleRos2Param);
 
 export default { handleRos2Param };

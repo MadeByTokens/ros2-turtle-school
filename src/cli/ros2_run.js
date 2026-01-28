@@ -1,6 +1,7 @@
 import { nodeRegistry } from '../nodes/registry.js';
 import { ProcessManager } from '../core/ProcessManager.js';
 import { LogManager } from '../core/LogManager.js';
+import { commandRegistry } from './commandRegistry.js';
 
 /**
  * Handle ros2 run command
@@ -204,5 +205,8 @@ function parseParamValue(str) {
   // String
   return str;
 }
+
+// Self-register with the command registry
+commandRegistry.registerRos2('run', handleRos2Run);
 
 export default { handleRos2Run };

@@ -1,12 +1,19 @@
-import { handleRos2Run } from './ros2_run.js';
-import { handleRos2Node } from './ros2_node.js';
-import { handleRos2Topic } from './ros2_topic.js';
-import { handleRos2Service } from './ros2_service.js';
-import { handleRos2Action } from './ros2_action.js';
-import { handleRos2Param } from './ros2_param.js';
-import { handleRos2Bag } from './ros2_bag.js';
-import { handleRos2Interface } from './ros2_interface.js';
-import { handleRos2Pkg } from './ros2_pkg.js';
+/**
+ * Command Parser - Routes commands to handlers via the command registry.
+ */
+
+import { commandRegistry } from './commandRegistry.js';
+
+// Import all handlers to trigger registration
+import './ros2_run.js';
+import './ros2_node.js';
+import './ros2_topic.js';
+import './ros2_service.js';
+import './ros2_action.js';
+import './ros2_param.js';
+import './ros2_bag.js';
+import './ros2_interface.js';
+import './ros2_pkg.js';
 
 /**
  * Main command parser - routes commands to appropriate handlers
@@ -30,7 +37,7 @@ export async function parseCommand(input, terminal) {
   const command = parts[0];
   const args = parts.slice(1);
 
-  // Route to appropriate handler
+  // Route to appropriate handler via registry or built-in commands
   switch (command) {
     case 'ros2':
       await handleRos2Command(args, terminal);
@@ -154,7 +161,7 @@ function parseCommandLine(input) {
 }
 
 /**
- * Handle ros2 subcommands
+ * Handle ros2 subcommands via the command registry
  */
 async function handleRos2Command(args, terminal) {
   if (args.length === 0) {
@@ -166,47 +173,13 @@ async function handleRos2Command(args, terminal) {
   const subcommand = args[0];
   const subArgs = args.slice(1);
 
-  switch (subcommand) {
-    case 'run':
-      await handleRos2Run(subArgs, terminal);
-      break;
+  // Try to execute via registry
+  const handled = await commandRegistry.executeRos2(subcommand, subArgs, terminal);
 
-    case 'node':
-      await handleRos2Node(subArgs, terminal);
-      break;
-
-    case 'topic':
-      await handleRos2Topic(subArgs, terminal);
-      break;
-
-    case 'service':
-      await handleRos2Service(subArgs, terminal);
-      break;
-
-    case 'action':
-      await handleRos2Action(subArgs, terminal);
-      break;
-
-    case 'param':
-      await handleRos2Param(subArgs, terminal);
-      break;
-
-    case 'bag':
-      await handleRos2Bag(subArgs, terminal);
-      break;
-
-    case 'interface':
-      await handleRos2Interface(subArgs, terminal);
-      break;
-
-    case 'pkg':
-      await handleRos2Pkg(subArgs, terminal);
-      break;
-
-    default:
-      terminal.writeln(`\x1b[31mUnknown ros2 command: ${subcommand}\x1b[0m`);
-      showRos2Help(terminal);
-      terminal.finishCommand();
+  if (!handled) {
+    terminal.writeln(`\x1b[31mUnknown ros2 command: ${subcommand}\x1b[0m`);
+    showRos2Help(terminal);
+    terminal.finishCommand();
   }
 }
 

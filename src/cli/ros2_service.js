@@ -1,6 +1,7 @@
 import { SimDDS } from '../core/SimDDS.js';
 import { parseMessage, formatMessage } from './messageParser.js';
 import { getService, findServices } from '../msgs/index.js';
+import { commandRegistry } from './commandRegistry.js';
 
 /**
  * Handle ros2 service commands
@@ -224,5 +225,8 @@ function handleEcho(args, terminal) {
   terminal.writeln('\x1b[33mService echo is not fully supported in this simulation.\x1b[0m');
   terminal.finishCommand();
 }
+
+// Self-register with the command registry
+commandRegistry.registerRos2('service', handleRos2Service);
 
 export default { handleRos2Service };

@@ -40,6 +40,30 @@ export class TerminalManager {
       // Delay to allow layout to settle
       setTimeout(() => this._resizeAll(), 100);
     });
+
+    // Listen for process state changes to update tab indicators
+    window.addEventListener('process-started', (event) => {
+      const { terminalId } = event.detail || {};
+      if (terminalId) this._updateTabIndicator(terminalId, true);
+    });
+
+    window.addEventListener('process-stopped', (event) => {
+      const { terminalId } = event.detail || {};
+      if (terminalId) this._updateTabIndicator(terminalId, false);
+    });
+  }
+
+  /**
+   * Update the tab process indicator dot
+   */
+  _updateTabIndicator(termId, isRunning) {
+    const termData = this.terminals.get(termId);
+    if (!termData) return;
+
+    const statusDot = termData.tab.querySelector('.tab-status');
+    if (statusDot) {
+      statusDot.classList.toggle('running', isRunning);
+    }
   }
 
   _addTerminal() {
@@ -60,9 +84,12 @@ export class TerminalManager {
     const tab = document.createElement('div');
     tab.className = 'terminal-tab';
     tab.dataset.termId = termId;
+    tab.setAttribute('role', 'tab');
+    tab.setAttribute('aria-selected', 'false');
     tab.innerHTML = `
+      <span class="tab-status" aria-hidden="true"></span>
       <span class="tab-title">Terminal ${termNum}</span>
-      <button class="tab-close" title="Close terminal">&times;</button>
+      <button class="tab-close" aria-label="Close terminal ${termNum}">&times;</button>
     `;
     this.tabList.appendChild(tab);
 
@@ -140,12 +167,14 @@ export class TerminalManager {
       const prevData = this.terminals.get(this.activeTerminalId);
       if (prevData) {
         prevData.tab.classList.remove('active');
+        prevData.tab.setAttribute('aria-selected', 'false');
         prevData.container.classList.remove('active');
       }
     }
 
     // Activate new
     termData.tab.classList.add('active');
+    termData.tab.setAttribute('aria-selected', 'true');
     termData.container.classList.add('active');
     this.activeTerminalId = termId;
 

@@ -1,6 +1,7 @@
 import { SimDDS } from '../core/SimDDS.js';
 import { BagRecorder, BagStorage } from '../core/BagRecorder.js';
 import { BagPlayer } from '../core/BagPlayer.js';
+import { commandRegistry } from './commandRegistry.js';
 
 /**
  * Handle ros2 bag commands
@@ -222,5 +223,8 @@ function handleInfo(args, terminal) {
     terminal.writeln(`  ${topic}: ${count} messages`);
   }
 }
+
+// Self-register with the command registry
+commandRegistry.registerRos2('bag', handleRos2Bag);
 
 export default { handleRos2Bag };

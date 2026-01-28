@@ -1,4 +1,5 @@
 import { nodeRegistry } from '../nodes/registry.js';
+import { commandRegistry } from './commandRegistry.js';
 
 /**
  * Handle ros2 pkg commands
@@ -86,5 +87,8 @@ function handleList(args, terminal) {
     terminal.writeln(pkg);
   }
 }
+
+// Self-register with the command registry
+commandRegistry.registerRos2('pkg', handleRos2Pkg);
 
 export default { handleRos2Pkg };

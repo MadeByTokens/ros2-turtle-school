@@ -9,25 +9,54 @@
 <body>
   <div id="app">
     <header id="header">
-      <h1>ROS2 Web Emulator</h1>
+      <div class="header-brand">
+        <svg class="header-logo" width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="16" cy="16" r="14" stroke="#4a90d9" stroke-width="2.5" fill="none"/>
+          <circle cx="16" cy="16" r="4" fill="#4a90d9"/>
+          <path d="M16 6 L16 10 M16 22 L16 26 M6 16 L10 16 M22 16 L26 16" stroke="#4a90d9" stroke-width="2" stroke-linecap="round"/>
+          <path d="M9.5 9.5 L12.5 12.5 M19.5 19.5 L22.5 22.5 M9.5 22.5 L12.5 19.5 M19.5 12.5 L22.5 9.5" stroke="#4a90d9" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <h1>ROS2 Web Emulator</h1>
+      </div>
       <div class="header-controls">
-        <button id="toggle-graph" title="Toggle rqt_graph">Graph</button>
-        <button id="toggle-map" title="Toggle SLAM Map">Map</button>
-        <button id="toggle-console" title="Toggle rqt_console">Console</button>
-        <button id="show-help" title="Show Help">Help</button>
+        <button id="toggle-graph" aria-label="Toggle node graph" data-tooltip="Node Graph">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/>
+            <line x1="9" y1="6" x2="15" y2="6"/><line x1="6" y1="9" x2="6" y2="15"/><line x1="18" y1="9" x2="18" y2="15"/><line x1="9" y1="18" x2="15" y2="18"/>
+          </svg>
+          <span class="btn-label">Graph</span>
+        </button>
+        <button id="toggle-map" aria-label="Toggle SLAM map" data-tooltip="SLAM Map">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>
+          </svg>
+          <span class="btn-label">Map</span>
+        </button>
+        <button id="toggle-console" aria-label="Toggle log console" data-tooltip="Log Console">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+          </svg>
+          <span class="btn-label">Console</span>
+        </button>
+        <button id="show-help" aria-label="Show help" data-tooltip="Help & Commands">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span class="btn-label">Help</span>
+        </button>
       </div>
     </header>
 
     <main id="main-container">
       <div id="visualization-panel">
         <div id="canvas-container">
-          <canvas id="turtle-canvas" width="500" height="500"></canvas>
-          <div id="canvas-toolbar">
-            <button id="randomize-obstacles" title="Generate random obstacles">🎲 Random</button>
-            <button id="add-obstacle-mode" title="Click canvas to add obstacles">➕ Add</button>
-            <button id="delete-obstacle-mode" title="Click obstacles to delete">🗑️ Delete</button>
-            <button id="clear-obstacles" title="Remove all obstacles">Clear</button>
-            <button id="reset-obstacles" title="Reset to default">Reset</button>
+          <canvas id="turtle-canvas" width="500" height="500" aria-label="Turtlesim simulation canvas" role="img"></canvas>
+          <div id="canvas-toolbar" role="toolbar" aria-label="Canvas controls">
+            <button id="randomize-obstacles" aria-label="Generate random obstacles">🎲 Random</button>
+            <button id="add-obstacle-mode" aria-label="Click canvas to add obstacles">➕ Add</button>
+            <button id="delete-obstacle-mode" aria-label="Click obstacles to delete">🗑️ Delete</button>
+            <button id="clear-obstacles" aria-label="Remove all obstacles">Clear</button>
+            <button id="reset-obstacles" aria-label="Reset obstacles to default">Reset</button>
           </div>
         </div>
         <div id="map-container" class="hidden">
@@ -36,32 +65,33 @@
         <div id="graph-container" class="hidden"></div>
       </div>
 
-      <div id="terminal-panel">
+      <div id="terminal-panel" role="region" aria-label="Terminal panels">
         <div id="terminal-tabs">
-          <div class="tab-list"></div>
-          <button id="add-terminal" title="Add Terminal">+</button>
+          <div class="tab-list" role="tablist" aria-label="Terminal tabs"></div>
+          <button id="add-terminal" aria-label="Add new terminal">+</button>
         </div>
-        <div id="terminals-container"></div>
+        <div id="terminals-container" role="tabpanel"></div>
       </div>
 
-      <div id="console-panel" class="hidden">
-        <div class="console-header">
-          <span>rqt_console</span>
-          <select id="console-filter-level">
-            <option value="DEBUG">DEBUG</option>
-            <option value="INFO" selected>INFO</option>
-            <option value="WARN">WARN</option>
-            <option value="ERROR">ERROR</option>
-            <option value="FATAL">FATAL</option>
-          </select>
-          <input type="text" id="console-filter-node" placeholder="Filter by node...">
-          <button id="console-clear">Clear</button>
-          <button id="console-pause">Pause</button>
-          <button id="console-close">X</button>
-        </div>
-        <div id="console-messages"></div>
-      </div>
     </main>
+
+    <div id="console-panel" class="hidden">
+      <div class="console-header">
+        <span>rqt_console</span>
+        <select id="console-filter-level">
+          <option value="DEBUG">DEBUG</option>
+          <option value="INFO" selected>INFO</option>
+          <option value="WARN">WARN</option>
+          <option value="ERROR">ERROR</option>
+          <option value="FATAL">FATAL</option>
+        </select>
+        <input type="text" id="console-filter-node" placeholder="Filter by node...">
+        <button id="console-clear">Clear</button>
+        <button id="console-pause">Pause</button>
+        <button id="console-close" aria-label="Close console">X</button>
+      </div>
+      <div id="console-messages"></div>
+    </div>
 
     <div id="quick-commands" class="mobile-only">
       <button data-cmd="ros2 topic list">Topics</button>
@@ -74,7 +104,7 @@
     <div id="modal-content">
       <div class="modal-header">
         <span id="modal-title">rqt</span>
-        <button id="modal-close">X</button>
+        <button id="modal-close" aria-label="Close modal">X</button>
       </div>
       <div id="modal-body"></div>
     </div>

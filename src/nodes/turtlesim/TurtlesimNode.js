@@ -1,5 +1,6 @@
 import { Node } from '../../core/Node.js';
 import { WorldState } from '../../core/WorldState.js';
+import { nodeRegistry } from '../registry.js';
 
 /**
  * TurtlesimNode - Main turtlesim simulation node
@@ -468,3 +469,6 @@ export class TurtlesimNode extends Node {
     };
   }
 }
+
+// Self-register with the node registry
+nodeRegistry.register('turtlesim', 'turtlesim_node', TurtlesimNode);

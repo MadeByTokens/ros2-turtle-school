@@ -2,6 +2,8 @@
  * sensor_msgs - Sensor-related ROS2 message types
  */
 
+import { messageRegistry } from './registry.js';
+
 export const LaserScan = {
   name: 'sensor_msgs/msg/LaserScan',
   fields: {
@@ -77,6 +79,10 @@ float64[9] angular_velocity_covariance
 geometry_msgs/Vector3 linear_acceleration
 float64[9] linear_acceleration_covariance`
 };
+
+// Self-register all message types
+messageRegistry.registerMessage('sensor_msgs/msg/LaserScan', LaserScan);
+messageRegistry.registerMessage('sensor_msgs/msg/Imu', Imu);
 
 // Export all message types
 export default {

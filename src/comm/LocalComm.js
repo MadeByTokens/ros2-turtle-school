@@ -24,6 +24,15 @@ export class LocalComm extends CommInterface {
         publishers: new Map(),
         subscribers: new Map()
       });
+    } else {
+      const existing = this.topics.get(topic);
+      if (existing.type !== msgType && msgType !== 'unknown' && existing.type !== 'unknown') {
+        console.warn(
+          `[WARN] Topic '${topic}' already exists with type '${existing.type}', ` +
+          `but was requested with type '${msgType}'. In ROS2, all publishers and ` +
+          `subscribers on a topic must use the same type.`
+        );
+      }
     }
     return this.topics.get(topic);
   }

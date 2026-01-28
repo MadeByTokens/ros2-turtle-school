@@ -32,6 +32,11 @@ class ProcessManagerClass {
     node.start();
     this.logger.info(`Spawned ${packageName}/${executable} as ${node.fullName} (pid: ${processId})`);
 
+    // Dispatch event for UI updates
+    window.dispatchEvent(new CustomEvent('process-started', {
+      detail: { processId, terminalId, nodeName: node.fullName }
+    }));
+
     return processId;
   }
 
@@ -46,9 +51,18 @@ class ProcessManagerClass {
       return false;
     }
 
+    const terminalId = proc.terminalId;
+    const nodeName = proc.node.fullName;
+
     proc.node.destroy();
     this.processes.delete(processId);
     this.logger.info(`Killed process ${processId}`);
+
+    // Dispatch event for UI updates
+    window.dispatchEvent(new CustomEvent('process-stopped', {
+      detail: { processId, terminalId, nodeName }
+    }));
+
     return true;
   }
 

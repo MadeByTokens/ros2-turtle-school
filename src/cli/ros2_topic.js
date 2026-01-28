@@ -1,6 +1,7 @@
 import { SimDDS } from '../core/SimDDS.js';
 import { parseMessage, formatMessage } from './messageParser.js';
 import { getMessage, findMessages } from '../msgs/index.js';
+import { commandRegistry } from './commandRegistry.js';
 
 /**
  * Handle ros2 topic commands
@@ -317,7 +318,7 @@ function handleHz(args, terminal) {
     }
 
     if (timestamps.length >= 2) {
-      const duration = (timestamps[timestamps.length - 1] - timestamps[0]) / 1000;
+      const duration = Math.max((timestamps[timestamps.length - 1] - timestamps[0]) / 1000, 0.001);
       const rate = (timestamps.length - 1) / duration;
       const avgPeriod = duration / (timestamps.length - 1);
 
@@ -375,5 +376,8 @@ function handleBw(args, terminal) {
     destroy: () => SimDDS.unsubscribe(sub)
   });
 }
+
+// Self-register with the command registry
+commandRegistry.registerRos2('topic', handleRos2Topic);
 
 export default { handleRos2Topic };

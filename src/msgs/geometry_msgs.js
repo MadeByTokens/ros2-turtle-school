@@ -2,6 +2,8 @@
  * geometry_msgs - Geometry-related ROS2 message types
  */
 
+import { messageRegistry } from './registry.js';
+
 export const Vector3 = {
   name: 'geometry_msgs/msg/Vector3',
   fields: {
@@ -151,6 +153,17 @@ std_msgs/Header header
 string child_frame_id
 Transform transform`
 };
+
+// Self-register all message types
+messageRegistry.registerMessage('geometry_msgs/msg/Vector3', Vector3);
+messageRegistry.registerMessage('geometry_msgs/msg/Point', Point);
+messageRegistry.registerMessage('geometry_msgs/msg/Quaternion', Quaternion);
+messageRegistry.registerMessage('geometry_msgs/msg/Pose', Pose);
+messageRegistry.registerMessage('geometry_msgs/msg/PoseStamped', PoseStamped);
+messageRegistry.registerMessage('geometry_msgs/msg/Twist', Twist);
+messageRegistry.registerMessage('geometry_msgs/msg/TwistStamped', TwistStamped);
+messageRegistry.registerMessage('geometry_msgs/msg/Transform', Transform);
+messageRegistry.registerMessage('geometry_msgs/msg/TransformStamped', TransformStamped);
 
 // Export all message types
 export default {
