@@ -37,10 +37,10 @@ export class LocalComm extends CommInterface {
     return this.topics.get(topic);
   }
 
-  subscribe(topic, msgType, callback) {
+  subscribe(topic, msgType, callback, nodeId = null) {
     const topicData = this._ensureTopic(topic, msgType);
     const subId = this._generateId();
-    topicData.subscribers.set(subId, { callback, msgType });
+    topicData.subscribers.set(subId, { callback, msgType, nodeId });
     return subId;
   }
 

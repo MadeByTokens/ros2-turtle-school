@@ -105,7 +105,7 @@ class SimDDSClass {
    * @returns {Object} Subscription object
    */
   createSubscription(nodeId, topic, msgType, callback) {
-    const subId = this.comm.subscribe(topic, msgType, callback);
+    const subId = this.comm.subscribe(topic, msgType, callback, nodeId);
     const nodeData = this.nodes.get(nodeId);
     if (nodeData) {
       nodeData.subscribers.push(subId);

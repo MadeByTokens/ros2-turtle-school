@@ -157,6 +157,23 @@ export class Graph {
           });
         }
       }
+
+      // Add edges from topic to subscribers
+      for (const sub of topic.subscribers) {
+        const nodeId = `node_${sub.nodeId}`;
+        if (nodeSet.has(nodeId)) {
+          const edgeId = `${topicId}_to_${nodeId}`;
+          elementIds.push(edgeId);
+          elements.push({
+            data: {
+              id: edgeId,
+              source: topicId,
+              target: nodeId,
+              type: 'subscribe'
+            }
+          });
+        }
+      }
     }
 
     // Create a signature of current graph structure
