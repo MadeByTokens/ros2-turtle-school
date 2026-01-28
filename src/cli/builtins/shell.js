@@ -1,5 +1,5 @@
 /**
- * Shell built-in commands - clear, ls, pwd, cd, cat, echo, whoami, uname, exit
+ * Shell built-in commands - clear, ls, pwd, cd, echo, whoami, uname, exit
  */
 
 import { commandRegistry } from '../commandRegistry.js';
@@ -83,9 +83,9 @@ function handleCd(args, terminal) {
 }
 
 /**
- * Cat/echo - print text
+ * Echo - print text
  */
-function handleCatEcho(args, terminal) {
+function handleEcho(args, terminal) {
   if (args.length > 0) {
     terminal.writeln(args.join(' '));
   }
@@ -126,8 +126,7 @@ commandRegistry.register('clear', handleClear);
 commandRegistry.register('ls', handleLs);
 commandRegistry.register('pwd', handlePwd);
 commandRegistry.register('cd', handleCd);
-commandRegistry.register('cat', handleCatEcho);
-commandRegistry.register('echo', handleCatEcho);
+commandRegistry.register('echo', handleEcho);
 commandRegistry.register('whoami', handleWhoami);
 commandRegistry.register('uname', handleUname);
 commandRegistry.register('exit', handleExit);
