@@ -165,10 +165,10 @@ function handleSet(args, terminal) {
   // Parse value
   const value = parseValue(valueStr);
 
-  // Try to set
-  const success = proc.node.setParameter(paramName, value);
-  if (!success) {
-    terminal.writeln(`\x1b[31mParameter '${paramName}' not found on node '${nodeName}'\x1b[0m`);
+  // Try to set with validation feedback
+  const result = proc.node.setParameters({ [paramName]: value });
+  if (!result.successful) {
+    terminal.writeln(`\x1b[31m${result.reason}\x1b[0m`);
     return;
   }
 

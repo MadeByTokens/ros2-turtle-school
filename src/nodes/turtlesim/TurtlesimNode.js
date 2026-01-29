@@ -60,6 +60,19 @@ export class TurtlesimNode extends Node {
     // Notify canvas to render
     this._notifyCanvas();
 
+    // Register parameter validation callback
+    this.addOnSetParametersCallback((params) => {
+      for (const key of ['background_r', 'background_g', 'background_b']) {
+        if (key in params) {
+          const val = params[key];
+          if (typeof val !== 'number' || !Number.isInteger(val) || val < 0 || val > 255) {
+            return { successful: false, reason: `${key} must be an integer between 0 and 255` };
+          }
+        }
+      }
+      return { successful: true, reason: '' };
+    });
+
     this.logInfo('Turtlesim node started');
   }
 

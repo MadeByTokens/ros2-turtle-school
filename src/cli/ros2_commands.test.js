@@ -738,6 +738,7 @@ describe('ros2 param (Tutorial: Understanding Parameters)', () => {
           return params[name];
         },
         setParameter: vi.fn(() => true),
+        setParameters: vi.fn(() => ({ successful: true, reason: '' })),
       },
     };
   };
@@ -819,7 +820,7 @@ describe('ros2 param (Tutorial: Understanding Parameters)', () => {
       await handleRos2Param(['set', '/turtlesim', 'background_r', '150'], t);
 
       const node = ProcessManager._state.processes['/turtlesim'].node;
-      expect(node.setParameter).toHaveBeenCalledWith('background_r', 150);
+      expect(node.setParameters).toHaveBeenCalledWith({ background_r: 150 });
       expect(t.lines[0]).toContain('Set parameter');
     });
   });
@@ -1183,6 +1184,7 @@ describe('SLAM Tutorial CLI commands', () => {
           return params[name];
         },
         setParameter: vi.fn(() => true),
+        setParameters: vi.fn(() => ({ successful: true, reason: '' })),
       },
     };
 
@@ -1211,6 +1213,7 @@ describe('SLAM Tutorial CLI commands', () => {
           return params[name];
         },
         setParameter: vi.fn(() => true),
+        setParameters: vi.fn(() => ({ successful: true, reason: '' })),
       },
     };
   };
@@ -1347,7 +1350,7 @@ describe('SLAM Tutorial CLI commands', () => {
       await handleRos2Param(['set', '/slam_node', 'hit_prob', '0.95'], t);
 
       const node = ProcessManager._state.processes['/slam_node'].node;
-      expect(node.setParameter).toHaveBeenCalledWith('hit_prob', 0.95);
+      expect(node.setParameters).toHaveBeenCalledWith({ hit_prob: 0.95 });
       expect(t.lines[0]).toContain('Set parameter');
     });
 
@@ -1357,7 +1360,7 @@ describe('SLAM Tutorial CLI commands', () => {
       await handleRos2Param(['set', '/slam_node', 'miss_prob', '0.1'], t);
 
       const node = ProcessManager._state.processes['/slam_node'].node;
-      expect(node.setParameter).toHaveBeenCalledWith('miss_prob', 0.1);
+      expect(node.setParameters).toHaveBeenCalledWith({ miss_prob: 0.1 });
     });
 
     it('ros2 param dump /slam_node shows all parameter values', async () => {

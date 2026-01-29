@@ -21,5 +21,8 @@ import './sensor_msgs.js';
 // Navigation messages
 import './nav_msgs.js';
 
+// Nav2 actions
+import './nav2_actions.js';
+
 // Re-export the registry for convenience
 export { messageRegistry } from './registry.js';

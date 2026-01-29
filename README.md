@@ -21,6 +21,11 @@ Browser-based ROS2 CLI emulator for educational purposes. Runs entirely client-s
 - **Multiple Terminals** - Up to 4 terminal panes with tab management
 - **Teleop Control** - WASD keys work directly from terminal (W/S: forward/back, A/D: turn, Q/E: diagonal)
 - **Bag Recording** - Record and playback topic messages
+- **TF2 Tools** - Query transforms with tf2_echo, tf2_monitor, view_frames
+- **Nav2 Path Planning** - A* path planning with NavigateToPose action
+- **Loop Closure** - Educational pose-graph loop closure detection with optional drift simulation
+- **Localization Mode** - Save and localize against a pre-built map
+- **Dynamic Reconfigure** - Parameter validation callbacks (accept/reject with reasons)
 - **Copy/Paste Support** - Right-click context menu in terminal
 
 ## Quick Start
@@ -409,7 +414,7 @@ npm test -- --run     # Run tests once
 npm run test:coverage # Run tests with coverage report
 ```
 
-Test suite covers the core ROS 2 emulation layer (308 tests across 7 files):
+Test suite covers the core ROS 2 emulation layer (341 tests across 10 files):
 
 | Test File | Module | Tests |
 |-----------|--------|-------|
@@ -420,6 +425,9 @@ Test suite covers the core ROS 2 emulation layer (308 tests across 7 files):
 | `src/core/Node.test.js` | Parameters, timers, lifecycle | 33 |
 | `src/msgs/registry.test.js` | Message/service/action registry | 31 |
 | `src/core/ProcessManager.test.js` | Process spawn, kill, queries | 28 |
+| `src/core/Node.dynreconfig.test.js` | Dynamic reconfigure callbacks | 16 |
+| `src/nodes/nav2_simple_navigator/NavigatorNode.test.js` | Nav2 A* path planning | 9 |
+| `src/nodes/tf2_ros/TF2Nodes.test.js` | TF2 echo, monitor, view_frames | 8 |
 
 ### Runtime Logging
 
@@ -459,6 +467,8 @@ View logs: run `rqt_console` in terminal.
 - No QoS profiles
 - Lidar simulation is basic raycasting
 - SLAM is educational, not production-grade
+- Nav2 path planning uses simple A* (no costmaps or DWA local planner)
+- Loop closure is proximity-based (no scan matching or graph optimization)
 
 ## Dependencies
 

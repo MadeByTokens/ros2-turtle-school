@@ -61,11 +61,19 @@ export async function handleRos2Run(args, terminal) {
   }
 
   try {
+    // Collect positional args (before --ros-args)
+    const positionalArgs = [];
+    for (const arg of args.slice(2)) {
+      if (arg === '--ros-args') break;
+      positionalArgs.push(arg);
+    }
+
     // Create node instance
     const node = new nodeClass(nodeName, {
       namespace: rosArgs.namespace,
       parameters: rosArgs.params,
-      remappings: rosArgs.remap
+      remappings: rosArgs.remap,
+      args: positionalArgs
     });
 
     // Spawn the node

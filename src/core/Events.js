@@ -16,6 +16,13 @@ export const Events = {
   SHOW_MAP: 'show-map',
   TOGGLE_MAP_OVERLAY: 'toggle-map-overlay',
 
+  // Navigation
+  PATH_PLANNED: 'path-planned',
+  PATH_CLEARED: 'path-cleared',
+
+  // Loop closure
+  LOOP_CLOSURE_DETECTED: 'loop-closure-detected',
+
   // Process lifecycle
   PROCESS_STARTED: 'process-started',
   PROCESS_STOPPED: 'process-stopped',

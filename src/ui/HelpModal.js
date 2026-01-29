@@ -81,6 +81,10 @@ export class HelpModal {
           <tr><td><code>ros2 run teleop_twist_keyboard teleop_twist_keyboard</code></td><td>Control with WASD keys</td></tr>
           <tr><td><code>ros2 run simple_slam slam_node</code></td><td>Start SLAM mapping node</td></tr>
           <tr><td><code>ros2 run tf2_ros static_transform_publisher</code></td><td>Publish static TF</td></tr>
+          <tr><td><code>ros2 run tf2_ros tf2_echo &lt;src&gt; &lt;tgt&gt;</code></td><td>Query transform between frames</td></tr>
+          <tr><td><code>ros2 run tf2_ros tf2_monitor</code></td><td>Monitor all TF broadcasts</td></tr>
+          <tr><td><code>ros2 run tf2_ros view_frames</code></td><td>Print TF frame tree</td></tr>
+          <tr><td><code>ros2 run nav2_simple_navigator navigator_node</code></td><td>Start Nav2 path planner</td></tr>
         </table>
 
         <h3>Keyboard Shortcuts</h3>

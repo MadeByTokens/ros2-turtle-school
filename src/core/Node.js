@@ -19,6 +19,7 @@ export class Node {
     this.actionServers = [];
     this.timers = [];
     this.parameters = new Map();
+    this.parameterCallbacks = [];
     this.running = false;
 
     // Support dependency injection with fallback chain:
@@ -62,14 +63,42 @@ export class Node {
 
   /**
    * Set a parameter value
+   * @returns {boolean} True if parameter was set successfully
    */
   setParameter(name, value) {
-    if (this.parameters.has(name)) {
+    const result = this.setParameters({ [name]: value });
+    return result.successful;
+  }
+
+  /**
+   * Set multiple parameters atomically with callback validation
+   * @param {Object} params - Object of {name: value} pairs
+   * @returns {Object} { successful: boolean, reason: string }
+   */
+  setParameters(params) {
+    // Validate all parameters exist
+    for (const name of Object.keys(params)) {
+      if (!this.parameters.has(name)) {
+        return {
+          successful: false,
+          reason: `Parameter '${name}' not declared on node '${this.fullName}'`
+        };
+      }
+    }
+
+    // Run through callback chain
+    const validationResult = this._validateParameterChanges(params);
+    if (!validationResult.successful) {
+      return validationResult;
+    }
+
+    // All validated - apply changes
+    for (const [name, value] of Object.entries(params)) {
       this.parameters.set(name, value);
       this.onParameterChange(name, value);
-      return true;
     }
-    return false;
+
+    return { successful: true, reason: '' };
   }
 
   /**
@@ -84,6 +113,47 @@ export class Node {
    */
   onParameterChange(name, value) {
     // Override in subclasses
+  }
+
+  /**
+   * Register a callback to validate parameter changes before they take effect.
+   * Callback receives an object of {name: value} pairs and must return
+   * { successful: boolean, reason: string }.
+   * @param {Function} callback - Validation callback
+   * @returns {number} Callback ID for removal
+   */
+  addOnSetParametersCallback(callback) {
+    this.parameterCallbacks.push(callback);
+    return this.parameterCallbacks.length - 1;
+  }
+
+  /**
+   * Remove a parameter callback by ID
+   * @param {number} callbackId - ID returned from addOnSetParametersCallback
+   */
+  removeParameterCallback(callbackId) {
+    if (callbackId >= 0 && callbackId < this.parameterCallbacks.length) {
+      this.parameterCallbacks[callbackId] = null;
+    }
+  }
+
+  /**
+   * Validate parameter changes through the callback chain
+   * @private
+   */
+  _validateParameterChanges(params) {
+    for (const callback of this.parameterCallbacks) {
+      if (callback === null) continue;
+      try {
+        const result = callback(params);
+        if (!result.successful) {
+          return result;
+        }
+      } catch (err) {
+        return { successful: false, reason: `Callback error: ${err.message}` };
+      }
+    }
+    return { successful: true, reason: '' };
   }
 
   /**
