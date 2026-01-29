@@ -231,7 +231,10 @@ export class NavigatorNode extends Node {
 
     this.logInfo(`Received navigation goal: (${targetX.toFixed(2)}, ${targetY.toFixed(2)})`);
 
-    await this._navigateToSinglePose(targetX, targetY, isCanceled, feedbackCb);
+    const result = await this._navigateToSinglePose(targetX, targetY, isCanceled, feedbackCb);
+    if (!result.success) {
+      throw new Error('Navigation failed');
+    }
     return {};
   }
 
