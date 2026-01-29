@@ -91,9 +91,24 @@ export class Terminal {
       this.focused = false;
     }, true);
 
-    // Ensure xterm gets focus when clicking anywhere in the container
+    // Ensure xterm gets focus when clicking/tapping anywhere in the container
     this.container.addEventListener('mousedown', () => {
       this.xterm.focus();
+    });
+    this.container.addEventListener('touchstart', () => {
+      this.xterm.focus();
+    });
+
+    // Listen for native paste events (essential for iOS which lacks clipboard.readText())
+    this.xterm.textarea.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const text = e.clipboardData?.getData('text');
+      if (text) {
+        for (const char of text) {
+          if (char === '\n' || char === '\r') continue;
+          this._insertChar(char);
+        }
+      }
     });
 
     // Custom context menu for paste support
@@ -206,19 +221,21 @@ export class Terminal {
 
   async _handlePaste() {
     try {
-      const text = await navigator.clipboard.readText();
-      if (text) {
-        // Insert each character as if typed
-        for (const char of text) {
-          // Skip newlines or convert to space
-          if (char === '\n' || char === '\r') continue;
-          this._insertChar(char);
+      if (navigator.clipboard?.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          for (const char of text) {
+            if (char === '\n' || char === '\r') continue;
+            this._insertChar(char);
+          }
+          return;
         }
       }
     } catch (err) {
-      console.error('Failed to paste:', err);
-      // Fallback: prompt user that paste failed
+      // clipboard.readText() not supported or permission denied (e.g. iOS Safari)
     }
+    // Fallback: focus xterm textarea to allow native paste
+    this.xterm.focus();
   }
 
   /**
