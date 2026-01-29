@@ -902,6 +902,26 @@ input:focus:not(:focus-visible) {
     font-size: 11px;
   }
 
+  .header-controls button .btn-label {
+    display: none;
+  }
+
+  .header-controls {
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .header-brand {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  #header h1 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   #console-panel {
     height: 50%;
   }
