@@ -53,6 +53,12 @@ describe('NavigatorNode', () => {
     expect(node.getParameter('robot_radius')).toBe(0.6);
   });
 
+  it('has default recovery parameters', () => {
+    expect(node.getParameter('recovery_enabled')).toBe(true);
+    expect(node.getParameter('stuck_timeout')).toBe(3.0);
+    expect(node.getParameter('max_recovery_attempts')).toBe(3);
+  });
+
   it('validates parameter changes', () => {
     node.onInit();
 
@@ -79,6 +85,32 @@ describe('NavigatorNode', () => {
     // Valid robot_radius
     const result6 = node.setParameters({ robot_radius: 1.0 });
     expect(result6.successful).toBe(true);
+  });
+
+  it('validates stuck_timeout parameter', () => {
+    node.onInit();
+
+    const r1 = node.setParameters({ stuck_timeout: -1 });
+    expect(r1.successful).toBe(false);
+
+    const r2 = node.setParameters({ stuck_timeout: 31 });
+    expect(r2.successful).toBe(false);
+
+    const r3 = node.setParameters({ stuck_timeout: 5.0 });
+    expect(r3.successful).toBe(true);
+  });
+
+  it('validates max_recovery_attempts parameter', () => {
+    node.onInit();
+
+    const r1 = node.setParameters({ max_recovery_attempts: -1 });
+    expect(r1.successful).toBe(false);
+
+    const r2 = node.setParameters({ max_recovery_attempts: 11 });
+    expect(r2.successful).toBe(false);
+
+    const r3 = node.setParameters({ max_recovery_attempts: 5 });
+    expect(r3.successful).toBe(true);
   });
 
   describe('A* path planning', () => {
@@ -174,6 +206,133 @@ describe('NavigatorNode', () => {
       const path = node._planPath(1.0, 1.0, 9.0, 1.0);
       expect(path).not.toBeNull();
       expect(path.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('_navigateToSinglePose', () => {
+    beforeEach(() => {
+      node.onInit();
+      const width = 20;
+      const height = 20;
+      node.mapInfo = {
+        width,
+        height,
+        resolution: 0.5,
+        origin: { position: { x: 0, y: 0, z: 0 } },
+      };
+      node.mapData = new Array(width * height).fill(0);
+      // Position the robot near the goal for instant success
+      node.currentPose = { x: 5.0, y: 5.0, theta: 0 };
+      node.running = true;
+    });
+
+    it('returns success property for a reachable goal', async () => {
+      // The robot pose doesn't update in tests (no turtlesim), so we stop early.
+      // Stop the node after a short delay to exit the path-following loop.
+      node.setParameters({ recovery_enabled: false });
+      setTimeout(() => { node.running = false; }, 200);
+      const result = await node._navigateToSinglePose(5.2, 5.2, () => false, vi.fn());
+      expect(result).toHaveProperty('success');
+    }, 10000);
+
+    it('returns failure when no map available', async () => {
+      node.mapData = null;
+      const result = await node._navigateToSinglePose(5.0, 5.0, () => false, vi.fn());
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('_executeFollowWaypoints', () => {
+    beforeEach(() => {
+      node.onInit();
+      const width = 20;
+      const height = 20;
+      node.mapInfo = {
+        width,
+        height,
+        resolution: 0.5,
+        origin: { position: { x: 0, y: 0, z: 0 } },
+      };
+      node.mapData = new Array(width * height).fill(0);
+      node.currentPose = { x: 5.0, y: 5.0, theta: 0 };
+      node.running = true;
+    });
+
+    it('returns empty missed list for empty waypoints', async () => {
+      const result = await node._executeFollowWaypoints(
+        { poses: [] }, 'goal1', vi.fn(), () => false
+      );
+      expect(result.missed_waypoint_indices).toEqual([]);
+    });
+
+    it('reports missed waypoints when path planning fails', async () => {
+      // Block goal with obstacle
+      for (let gx = 0; gx < 20; gx++) {
+        for (let gy = 0; gy < 20; gy++) {
+          node.mapData[gy * 20 + gx] = 100;
+        }
+      }
+      // Leave current position free
+      node.mapData[10 * 20 + 10] = 0;
+
+      const result = await node._executeFollowWaypoints(
+        {
+          poses: [{ position: { x: 9.0, y: 9.0 } }]
+        },
+        'goal1',
+        vi.fn(),
+        () => false
+      );
+      expect(result.missed_waypoint_indices).toContain(0);
+    });
+
+    it('handles cancellation', async () => {
+      let callCount = 0;
+      const isCanceled = () => {
+        callCount++;
+        return callCount > 0; // Cancel immediately
+      };
+
+      const result = await node._executeFollowWaypoints(
+        {
+          poses: [
+            { position: { x: 3.0, y: 3.0 } },
+            { position: { x: 8.0, y: 8.0 } }
+          ]
+        },
+        'goal1',
+        vi.fn(),
+        isCanceled
+      );
+      // Should return with missed indices (cancelled before completing)
+      expect(result).toHaveProperty('missed_waypoint_indices');
+    });
+  });
+
+  describe('_executeRecovery', () => {
+    beforeEach(() => {
+      node.onInit();
+      node.running = true;
+    });
+
+    it('publishes velocity commands during recovery', async () => {
+      const publishCalls = [];
+      node.cmdVelPub = {
+        publish: vi.fn((msg) => publishCalls.push(msg)),
+        destroy: vi.fn()
+      };
+      node.recoveryPub = {
+        publish: vi.fn(),
+        destroy: vi.fn()
+      };
+
+      // Speed up by making running false after a short time
+      setTimeout(() => { node.running = false; }, 50);
+
+      await node._executeRecovery(1);
+
+      // Should have published angular and/or linear commands
+      expect(publishCalls.length).toBeGreaterThan(0);
     });
   });
 

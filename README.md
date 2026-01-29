@@ -23,6 +23,10 @@ Browser-based ROS2 CLI emulator for educational purposes. Runs entirely client-s
 - **Bag Recording** - Record and playback topic messages
 - **TF2 Tools** - Query transforms with tf2_echo, tf2_monitor, view_frames
 - **Nav2 Path Planning** - A* path planning with NavigateToPose action
+- **Waypoint Following** - FollowWaypoints action with numbered canvas markers and missed waypoint tracking
+- **Recovery Behaviors** - Automatic spin-and-backup when the robot gets stuck, with configurable timeout and retries
+- **Costmap Visualization** - Inflation zone overlay showing obstacle clearance radius
+- **Map Quality Visualization** - SLAM accuracy overlay comparing map against ground truth obstacles
 - **Loop Closure** - Educational pose-graph loop closure detection with optional drift simulation
 - **Localization Mode** - Save and localize against a pre-built map
 - **QoS Profiles** - Quality of Service settings (reliability, durability, history) with named presets and verbose display
@@ -481,6 +485,22 @@ Parameters:
 | `max_angular_speed` | 2.5 | Maximum angular speed (rad/s) |
 | `obstacle_threshold` | 50 | Cells with occupancy >= this are obstacles |
 | `robot_radius` | 0.6 | Robot radius for obstacle inflation (m) |
+| `recovery_enabled` | true | Enable stuck detection and recovery behaviors |
+| `stuck_timeout` | 3.0 | Seconds without progress before triggering recovery (0-30) |
+| `max_recovery_attempts` | 3 | Maximum recovery attempts before aborting (0-10) |
+
+### Waypoint Following
+
+Send the turtle through a sequence of waypoints:
+
+```bash
+ros2 action send_goal /follow_waypoints nav2_msgs/action/FollowWaypoints "{poses: [{position: {x: 3, y: 3}}, {position: {x: 8, y: 3}}, {position: {x: 8, y: 8}}]}"
+
+# With feedback:
+ros2 action send_goal /follow_waypoints nav2_msgs/action/FollowWaypoints "{poses: [{position: {x: 3, y: 3}}, {position: {x: 8, y: 8}}]}" --feedback
+```
+
+Numbered orange markers appear on the canvas. The result includes `missed_waypoint_indices` for any unreachable waypoints.
 
 ### Loop Closure & Odometry Drift
 

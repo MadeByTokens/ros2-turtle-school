@@ -126,6 +126,20 @@ class App {
     // Map overlay buttons
     this._setupMapOverlayButtons();
 
+    // Costmap toggle
+    const costmapBtn = document.getElementById('toggle-costmap');
+    costmapBtn?.addEventListener('click', () => {
+      const isVisible = this.canvas.toggleCostmap();
+      costmapBtn.classList.toggle('active', isVisible);
+    });
+
+    // Map quality toggle
+    const qualityBtn = document.getElementById('toggle-map-quality');
+    qualityBtn?.addEventListener('click', () => {
+      const isVisible = this.canvas.toggleMapQuality();
+      qualityBtn.classList.toggle('active', isVisible);
+    });
+
     // Custom events
     window.addEventListener(Events.TOGGLE_GRAPH, () => {
       this.graph.toggle();

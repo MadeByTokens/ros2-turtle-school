@@ -265,6 +265,16 @@ export class HelpModal {
             <tr><td><code>ros2 bag play my_run --rate 0.5</code></td><td>Replay at half speed</td></tr>
           </table>
 
+          <h4>Step 10: Map Quality Visualization</h4>
+          <p>Click the <strong>Quality</strong> button in the canvas toolbar to compare the SLAM map against the ground truth obstacles:</p>
+          <ul>
+            <li><strong>Green</strong> = SLAM matches ground truth (correct)</li>
+            <li><strong>Red</strong> = False positive (SLAM says occupied, actually free)</li>
+            <li><strong>Blue</strong> = False negative (SLAM says free, actually occupied)</li>
+            <li><strong>Gray</strong> = Unknown (not yet scanned)</li>
+          </ul>
+          <p>An accuracy percentage is shown in the top-left corner.</p>
+
           <h4>SLAM Cell Values</h4>
           <p><code>ros2 topic echo /map</code> shows OccupancyGrid data: <strong>-1</strong> = unknown, <strong>0</strong> = free, <strong>100</strong> = occupied.</p>
         </div>
@@ -337,6 +347,23 @@ export class HelpModal {
             <tr><td><code>ros2 run tf2_ros view_frames</code></td><td>Print the frame tree</td></tr>
             <tr><td><code>ros2 run tf2_ros tf2_monitor</code></td><td>Monitor all TF broadcasts</td></tr>
           </table>
+
+          <h4>Step 9: Waypoint Following</h4>
+          <p>Send the turtle through a sequence of waypoints:</p>
+          <code>ros2 action send_goal /follow_waypoints nav2_msgs/action/FollowWaypoints "{poses: [{position: {x: 3, y: 3}}, {position: {x: 8, y: 3}}, {position: {x: 8, y: 8}}]}"</code>
+          <p>Numbered orange markers appear on the canvas. The turtle visits each in order. Missed waypoints are reported in the result.</p>
+
+          <h4>Step 10: Recovery Behaviors</h4>
+          <p>When the robot gets stuck, it automatically spins and backs up to try to free itself.</p>
+          <table class="help-table">
+            <tr><td><code>ros2 topic echo /recovery_status</code></td><td>Watch recovery events</td></tr>
+            <tr><td><code>ros2 param set /navigator_node stuck_timeout 5.0</code></td><td>Seconds before recovery triggers</td></tr>
+            <tr><td><code>ros2 param set /navigator_node max_recovery_attempts 5</code></td><td>Max retries before abort</td></tr>
+            <tr><td><code>ros2 param set /navigator_node recovery_enabled false</code></td><td>Disable recovery</td></tr>
+          </table>
+
+          <h4>Step 11: Costmap Visualization</h4>
+          <p>Click the <strong>Costmap</strong> button in the canvas toolbar to see the inflation zone around obstacles. Red = obstacle, orange/yellow = inflation radius.</p>
 
           <h4>How A* Path Planning Works</h4>
           <p>The navigator uses the A* algorithm on the occupancy grid:</p>

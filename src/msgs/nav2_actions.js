@@ -52,4 +52,54 @@ float32 distance_remaining`
 
 messageRegistry.registerAction('nav2_msgs/action/NavigateToPose', NavigateToPose);
 
-export default { NavigateToPose };
+export const FollowWaypoints = {
+  name: 'nav2_msgs/action/FollowWaypoints',
+  type: 'action',
+  goal: {
+    poses: { type: 'geometry_msgs/msg/PoseStamped[]' }
+  },
+  result: {
+    missed_waypoint_indices: { type: 'int32[]', default: [] }
+  },
+  feedback: {
+    current_waypoint: { type: 'int32', default: 0 },
+    number_of_poses: { type: 'int32', default: 0 },
+    distance_remaining: { type: 'float32', default: 0.0 }
+  },
+  createGoal: (data = {}) => ({
+    poses: (data.poses || []).map(p => ({
+      header: p.header || { stamp: { sec: 0, nanosec: 0 }, frame_id: 'map' },
+      pose: {
+        position: {
+          x: p.pose?.position?.x ?? p.position?.x ?? 0.0,
+          y: p.pose?.position?.y ?? p.position?.y ?? 0.0,
+          z: p.pose?.position?.z ?? p.position?.z ?? 0.0
+        },
+        orientation: { x: 0, y: 0, z: 0, w: 1 }
+      }
+    }))
+  }),
+  createResult: (data = {}) => ({
+    missed_waypoint_indices: data.missed_waypoint_indices || []
+  }),
+  createFeedback: (data = {}) => ({
+    current_waypoint: data.current_waypoint ?? 0,
+    number_of_poses: data.number_of_poses ?? 0,
+    distance_remaining: data.distance_remaining ?? 0.0
+  }),
+  definition: `# Follow a sequence of waypoints.
+# Goal
+geometry_msgs/PoseStamped[] poses
+---
+# Result
+int32[] missed_waypoint_indices
+---
+# Feedback
+int32 current_waypoint
+int32 number_of_poses
+float32 distance_remaining`
+};
+
+messageRegistry.registerAction('nav2_msgs/action/FollowWaypoints', FollowWaypoints);
+
+export default { NavigateToPose, FollowWaypoints };

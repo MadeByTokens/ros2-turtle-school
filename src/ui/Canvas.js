@@ -37,6 +37,19 @@ export class Canvas {
     this.mapInfo = null;
     this.mapCanvas = null; // Off-screen canvas for map rendering
 
+    // Costmap overlay
+    this.showCostmap = false;
+    this.costmapCanvas = null;
+    this.costmapRobotRadius = 0.6;
+
+    // Map quality overlay
+    this.showMapQuality = false;
+    this.mapQualityCanvas = null;
+    this.mapQualityScore = null;
+
+    // Waypoints
+    this.waypoints = [];
+
     // Resize debounce guard
     this._resizeScheduled = false;
 
@@ -122,7 +135,13 @@ export class Canvas {
       this.mapData = map;
       this.mapInfo = info;
       this._updateMapCanvas();
-      if (this.showMap) {
+      if (this.showCostmap) {
+        this._updateCostmapCanvas();
+      }
+      if (this.showMapQuality) {
+        this._updateMapQualityCanvas();
+      }
+      if (this.showMap || this.showCostmap || this.showMapQuality) {
         this._render();
       }
     });
@@ -133,6 +152,17 @@ export class Canvas {
 
     // Listen for world state changes
     window.addEventListener(Events.WORLD_STATE_CHANGED, () => this._render());
+
+    // Listen for waypoint events
+    window.addEventListener(Events.WAYPOINTS_UPDATE, (event) => {
+      this.waypoints = event.detail.waypoints || [];
+      this._render();
+    });
+
+    window.addEventListener(Events.WAYPOINTS_CLEARED, () => {
+      this.waypoints = [];
+      this._render();
+    });
 
     // Initial size
     this._handleResize();
@@ -295,13 +325,187 @@ export class Canvas {
   }
 
   /**
+   * Update the costmap canvas showing inflation around obstacles
+   */
+  _updateCostmapCanvas() {
+    if (!this.mapData || !this.mapInfo) return;
+
+    const { width, height, resolution } = this.mapInfo;
+    if (!width || !height) return;
+
+    if (!this.costmapCanvas) {
+      this.costmapCanvas = document.createElement('canvas');
+    }
+    this.costmapCanvas.width = width;
+    this.costmapCanvas.height = height;
+
+    const ctx = this.costmapCanvas.getContext('2d');
+    const imageData = ctx.createImageData(width, height);
+
+    const radiusCells = this.costmapRobotRadius > 0 ? Math.ceil(this.costmapRobotRadius / resolution) : 0;
+    const threshold = 50; // obstacle threshold
+
+    // Pre-compute occupied cell positions
+    const occupiedCells = [];
+    for (let gy = 0; gy < height; gy++) {
+      for (let gx = 0; gx < width; gx++) {
+        const val = this.mapData[gy * width + gx];
+        if (val >= threshold) {
+          occupiedCells.push({ gx, gy });
+        }
+      }
+    }
+
+    for (let gy = 0; gy < height; gy++) {
+      for (let gx = 0; gx < width; gx++) {
+        const val = this.mapData[gy * width + gx];
+        const imageY = height - 1 - gy;
+        const pixelIndex = (imageY * width + gx) * 4;
+
+        if (val === -1 || radiusCells <= 0) {
+          // Unknown or no inflation — transparent
+          imageData.data[pixelIndex + 3] = 0;
+          continue;
+        }
+
+        if (val >= threshold) {
+          // Obstacle cell — red
+          imageData.data[pixelIndex] = 255;
+          imageData.data[pixelIndex + 1] = 0;
+          imageData.data[pixelIndex + 2] = 0;
+          imageData.data[pixelIndex + 3] = 180;
+          continue;
+        }
+
+        // Find min distance to nearest occupied cell within radiusCells
+        let minDist = Infinity;
+        for (const oc of occupiedCells) {
+          const dx = gx - oc.gx;
+          const dy = gy - oc.gy;
+          // Quick reject
+          if (Math.abs(dx) > radiusCells || Math.abs(dy) > radiusCells) continue;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < minDist) minDist = d2;
+        }
+
+        const dist = Math.sqrt(minDist);
+
+        if (dist <= radiusCells) {
+          // Within inflation zone — gradient: red(0) -> orange(mid) -> yellow(edge)
+          const t = dist / radiusCells; // 0 at obstacle, 1 at edge
+          const r = 255;
+          const g = Math.round(t * 200); // 0 -> 200
+          const b = 0;
+          const alpha = Math.round(150 * (1 - t * 0.7)); // fade out toward edge
+
+          imageData.data[pixelIndex] = r;
+          imageData.data[pixelIndex + 1] = g;
+          imageData.data[pixelIndex + 2] = b;
+          imageData.data[pixelIndex + 3] = alpha;
+        } else {
+          // Outside inflation — transparent
+          imageData.data[pixelIndex + 3] = 0;
+        }
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+  }
+
+  /**
+   * Update the map quality canvas comparing SLAM to ground truth
+   */
+  _updateMapQualityCanvas() {
+    if (!this.mapData || !this.mapInfo) return;
+
+    const { width, height, resolution, origin } = this.mapInfo;
+    if (!width || !height) return;
+
+    if (!this.mapQualityCanvas) {
+      this.mapQualityCanvas = document.createElement('canvas');
+    }
+    this.mapQualityCanvas.width = width;
+    this.mapQualityCanvas.height = height;
+
+    const ctx = this.mapQualityCanvas.getContext('2d');
+    const imageData = ctx.createImageData(width, height);
+
+    const obstacles = WorldState.getObstacles();
+    const threshold = 50;
+    let correct = 0;
+    let totalKnown = 0;
+
+    for (let gy = 0; gy < height; gy++) {
+      for (let gx = 0; gx < width; gx++) {
+        const val = this.mapData[gy * width + gx];
+        const imageY = height - 1 - gy;
+        const pixelIndex = (imageY * width + gx) * 4;
+
+        if (val === -1) {
+          // Unknown — gray
+          imageData.data[pixelIndex] = 128;
+          imageData.data[pixelIndex + 1] = 128;
+          imageData.data[pixelIndex + 2] = 128;
+          imageData.data[pixelIndex + 3] = 100;
+          continue;
+        }
+
+        // Convert grid cell center to world coordinates
+        const wx = gx * resolution + origin.position.x + resolution / 2;
+        const wy = gy * resolution + origin.position.y + resolution / 2;
+
+        const actuallyOccupied = this._isPointInAnyObstacle(wx, wy, obstacles);
+        const slamOccupied = val >= threshold;
+
+        totalKnown++;
+
+        if (slamOccupied === actuallyOccupied) {
+          // Correct — green
+          correct++;
+          imageData.data[pixelIndex] = 0;
+          imageData.data[pixelIndex + 1] = 200;
+          imageData.data[pixelIndex + 2] = 0;
+          imageData.data[pixelIndex + 3] = 100;
+        } else if (slamOccupied && !actuallyOccupied) {
+          // False positive — red
+          imageData.data[pixelIndex] = 255;
+          imageData.data[pixelIndex + 1] = 0;
+          imageData.data[pixelIndex + 2] = 0;
+          imageData.data[pixelIndex + 3] = 160;
+        } else {
+          // False negative — blue
+          imageData.data[pixelIndex] = 0;
+          imageData.data[pixelIndex + 1] = 80;
+          imageData.data[pixelIndex + 2] = 255;
+          imageData.data[pixelIndex + 3] = 160;
+        }
+      }
+    }
+
+    this.mapQualityScore = totalKnown > 0 ? (correct / totalKnown * 100) : null;
+    ctx.putImageData(imageData, 0, 0);
+  }
+
+  /**
+   * Check if a world-space point is inside any obstacle rectangle
+   */
+  _isPointInAnyObstacle(x, y, obstacles) {
+    for (const obs of obstacles) {
+      if (x >= obs.x && x <= obs.x + obs.width &&
+          y >= obs.y && y <= obs.y + obs.height) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Render map overlay on canvas
    */
   _renderMapOverlay() {
     if (!this.mapCanvas || !this.mapInfo) return;
 
     const ctx = this.ctx;
-    const { width: mapWidth, height: mapHeight, resolution, origin } = this.mapInfo;
 
     // Save context state
     ctx.save();
@@ -319,6 +523,52 @@ export class Canvas {
   }
 
   /**
+   * Render costmap overlay
+   */
+  _renderCostmapOverlay() {
+    if (!this.costmapCanvas || !this.mapInfo) return;
+
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(this.costmapCanvas, 0, 0, this.canvas.width, this.canvas.height);
+    ctx.restore();
+  }
+
+  /**
+   * Render map quality overlay with accuracy score
+   */
+  _renderMapQualityOverlay() {
+    if (!this.mapQualityCanvas || !this.mapInfo) return;
+
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(this.mapQualityCanvas, 0, 0, this.canvas.width, this.canvas.height);
+    ctx.restore();
+
+    // Draw accuracy score text box
+    if (this.mapQualityScore !== null) {
+      const text = `Accuracy: ${this.mapQualityScore.toFixed(1)}%`;
+      ctx.save();
+      ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      const metrics = ctx.measureText(text);
+      const padding = 6;
+      const boxW = metrics.width + padding * 2;
+      const boxH = 20;
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(8, 8, boxW, boxH);
+      ctx.fillStyle = '#fff';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 8 + padding, 8 + boxH / 2);
+      ctx.restore();
+    }
+  }
+
+  /**
    * Main render function
    */
   _render() {
@@ -333,6 +583,16 @@ export class Canvas {
     // Draw map overlay (before obstacles, after background)
     if (this.showMap) {
       this._renderMapOverlay();
+    }
+
+    // Draw costmap overlay
+    if (this.showCostmap) {
+      this._renderCostmapOverlay();
+    }
+
+    // Draw map quality overlay
+    if (this.showMapQuality) {
+      this._renderMapQualityOverlay();
     }
 
     // Draw obstacles
@@ -356,6 +616,11 @@ export class Canvas {
 
     // Draw turtles
     this._renderTurtles();
+
+    // Draw waypoints
+    if (this.waypoints.length > 0) {
+      this._renderWaypoints();
+    }
 
     // Draw TF frames
     if (this.showTF) {
@@ -458,6 +723,35 @@ export class Canvas {
       }
 
       ctx.restore();
+    }
+  }
+
+  /**
+   * Render waypoint markers as orange circles with numbered labels
+   */
+  _renderWaypoints() {
+    const ctx = this.ctx;
+    const radius = this._worldToCanvasScale(0.3);
+
+    for (let i = 0; i < this.waypoints.length; i++) {
+      const wp = this.waypoints[i];
+      const pos = this._worldToCanvas(wp.x, wp.y);
+
+      // Orange circle
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 165, 0, 0.8)';
+      ctx.fill();
+      ctx.strokeStyle = '#cc7700';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // White numbered label
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${Math.max(10, radius)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${i + 1}`, pos.x, pos.y);
     }
   }
 
@@ -638,5 +932,40 @@ export class Canvas {
    */
   isMapVisible() {
     return this.showMap;
+  }
+
+  /**
+   * Toggle costmap visualization
+   */
+  toggleCostmap() {
+    this.showCostmap = !this.showCostmap;
+    if (this.showCostmap) {
+      this._updateCostmapCanvas();
+    }
+    this._render();
+    return this.showCostmap;
+  }
+
+  /**
+   * Set costmap robot radius
+   */
+  setCostmapRobotRadius(radius) {
+    this.costmapRobotRadius = Math.max(0, Math.min(3, radius));
+    if (this.showCostmap) {
+      this._updateCostmapCanvas();
+      this._render();
+    }
+  }
+
+  /**
+   * Toggle map quality visualization
+   */
+  toggleMapQuality() {
+    this.showMapQuality = !this.showMapQuality;
+    if (this.showMapQuality) {
+      this._updateMapQualityCanvas();
+    }
+    this._render();
+    return this.showMapQuality;
   }
 }

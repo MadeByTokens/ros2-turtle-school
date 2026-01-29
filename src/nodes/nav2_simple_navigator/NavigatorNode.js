@@ -9,6 +9,7 @@ import { nodeRegistry } from '../registry.js';
  * Usage:
  *   ros2 run nav2_simple_navigator navigator_node
  *   ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose "{pose: {position: {x: 8.0, y: 8.0}}}"
+ *   ros2 action send_goal /follow_waypoints nav2_msgs/action/FollowWaypoints "{poses: [{position: {x: 3, y: 3}}, {position: {x: 8, y: 8}}]}"
  */
 export class NavigatorNode extends Node {
   constructor(name = 'navigator_node', options = {}) {
@@ -20,6 +21,9 @@ export class NavigatorNode extends Node {
         max_angular_speed: 2.5,
         obstacle_threshold: 50,
         robot_radius: 0.6,
+        recovery_enabled: true,
+        stuck_timeout: 3.0,
+        max_recovery_attempts: 3,
         ...options.parameters
       }
     });
@@ -37,9 +41,15 @@ export class NavigatorNode extends Node {
 
     this.pathPub = this.createPublisher('/plan', 'nav_msgs/msg/Path');
     this.cmdVelPub = this.createPublisher('/turtle1/cmd_vel', 'geometry_msgs/msg/Twist');
+    this.recoveryPub = this.createPublisher('/recovery_status', 'std_msgs/msg/String');
 
     this.createActionServer('/navigate_to_pose', 'nav2_msgs/action/NavigateToPose', {
       executeCallback: this._executeNavigate.bind(this),
+      goalCallback: () => true
+    });
+
+    this.createActionServer('/follow_waypoints', 'nav2_msgs/action/FollowWaypoints', {
+      executeCallback: this._executeFollowWaypoints.bind(this),
       goalCallback: () => true
     });
 
@@ -55,6 +65,12 @@ export class NavigatorNode extends Node {
       }
       if ('robot_radius' in params && (params.robot_radius < 0 || params.robot_radius > 3.0)) {
         return { successful: false, reason: 'robot_radius must be between 0 and 3.0' };
+      }
+      if ('stuck_timeout' in params && (params.stuck_timeout < 0 || params.stuck_timeout > 30)) {
+        return { successful: false, reason: 'stuck_timeout must be between 0 and 30' };
+      }
+      if ('max_recovery_attempts' in params && (params.max_recovery_attempts < 0 || params.max_recovery_attempts > 10)) {
+        return { successful: false, reason: 'max_recovery_attempts must be between 0 and 10' };
       }
       return { successful: true, reason: '' };
     });
@@ -79,22 +95,21 @@ export class NavigatorNode extends Node {
     this.currentPose = { x: msg.x, y: msg.y, theta: msg.theta };
   }
 
-  async _executeNavigate(goal, goalId, feedbackCb, isCanceled) {
-    const targetX = goal.pose?.pose?.position?.x ?? goal.pose?.position?.x ?? 0;
-    const targetY = goal.pose?.pose?.position?.y ?? goal.pose?.position?.y ?? 0;
-
-    this.logInfo(`Received navigation goal: (${targetX.toFixed(2)}, ${targetY.toFixed(2)})`);
-
+  /**
+   * Navigate to a single pose. Core logic extracted for reuse.
+   * @returns {{ success: boolean }}
+   */
+  async _navigateToSinglePose(targetX, targetY, isCanceled, feedbackCb) {
     if (!this.mapData || !this.mapInfo) {
       this.logError('No map available. Start SLAM node first: ros2 run simple_slam slam_node');
-      return {};
+      return { success: false };
     }
 
     // Plan path using A*
     const path = this._planPath(this.currentPose.x, this.currentPose.y, targetX, targetY);
     if (!path) {
       this.logError('Failed to find path to goal. Target may be in an obstacle or unreachable.');
-      return {};
+      return { success: false };
     }
 
     this.logInfo(`Path planned with ${path.length} waypoints`);
@@ -105,9 +120,12 @@ export class NavigatorNode extends Node {
     this.isNavigating = true;
     const tolerance = this.getParameter('goal_tolerance');
     let waypointIdx = 0;
-
-    // Skip waypoints that are very close together for smoother driving
     const step = Math.max(1, Math.floor(path.length / 50));
+
+    // Stuck detection state
+    let lastProgressTime = Date.now();
+    let lastProgressDist = Infinity;
+    let recoveryAttempts = 0;
 
     while (waypointIdx < path.length && this.running) {
       if (isCanceled()) {
@@ -115,26 +133,74 @@ export class NavigatorNode extends Node {
         this.logInfo('Navigation cancelled');
         this.isNavigating = false;
         this._clearPath();
-        return {};
+        return { success: false };
       }
 
       const target = path[waypointIdx];
       const dist = this._distance(this.currentPose, target);
 
-      // Send feedback
-      feedbackCb({
-        current_pose: {
-          header: { stamp: this.now(), frame_id: 'map' },
-          pose: {
-            position: { x: this.currentPose.x, y: this.currentPose.y, z: 0 },
-            orientation: { x: 0, y: 0, z: 0, w: 1 }
-          }
-        },
-        distance_remaining: this._pathDistanceFrom(path, waypointIdx)
-      });
+      if (feedbackCb) {
+        feedbackCb({
+          current_pose: {
+            header: { stamp: this.now(), frame_id: 'map' },
+            pose: {
+              position: { x: this.currentPose.x, y: this.currentPose.y, z: 0 },
+              orientation: { x: 0, y: 0, z: 0, w: 1 }
+            }
+          },
+          distance_remaining: this._pathDistanceFrom(path, waypointIdx)
+        });
+      }
 
       if (dist < tolerance) {
         waypointIdx += step;
+        lastProgressTime = Date.now();
+        lastProgressDist = Infinity;
+        continue;
+      }
+
+      // Stuck detection
+      const goalDist = this._distance(this.currentPose, { x: targetX, y: targetY });
+      if (goalDist < lastProgressDist - 0.05) {
+        lastProgressDist = goalDist;
+        lastProgressTime = Date.now();
+      }
+
+      const stuckTimeout = this.getParameter('stuck_timeout');
+      const maxRecovery = this.getParameter('max_recovery_attempts');
+      const recoveryEnabled = this.getParameter('recovery_enabled');
+
+      if (recoveryEnabled && stuckTimeout > 0 && (Date.now() - lastProgressTime) / 1000 > stuckTimeout) {
+        if (recoveryAttempts >= maxRecovery) {
+          this.logError(`Stuck after ${recoveryAttempts} recovery attempts. Aborting navigation.`);
+          this._stopRobot();
+          this.isNavigating = false;
+          this._clearPath();
+          return { success: false };
+        }
+
+        recoveryAttempts++;
+        this.logWarn(`Robot appears stuck. Executing recovery behavior (attempt ${recoveryAttempts}/${maxRecovery})`);
+        await this._executeRecovery(recoveryAttempts);
+
+        // Re-plan after recovery
+        const newPath = this._planPath(this.currentPose.x, this.currentPose.y, targetX, targetY);
+        if (!newPath) {
+          this.logError('Re-planning failed after recovery. Aborting navigation.');
+          this._stopRobot();
+          this.isNavigating = false;
+          this._clearPath();
+          return { success: false };
+        }
+
+        // Replace remaining path
+        path.length = 0;
+        path.push(...newPath);
+        waypointIdx = 0;
+        this._publishPath(path);
+        this._visualizePath(path);
+        lastProgressTime = Date.now();
+        lastProgressDist = Infinity;
         continue;
       }
 
@@ -152,11 +218,126 @@ export class NavigatorNode extends Node {
     const finalDist = this._distance(this.currentPose, { x: targetX, y: targetY });
     if (finalDist < tolerance * 2) {
       this.logInfo(`Goal reached! Final distance: ${finalDist.toFixed(2)}m`);
+      return { success: true };
     } else {
       this.logWarn(`Navigation ended. Distance to goal: ${finalDist.toFixed(2)}m`);
+      return { success: false };
+    }
+  }
+
+  async _executeNavigate(goal, goalId, feedbackCb, isCanceled) {
+    const targetX = goal.pose?.pose?.position?.x ?? goal.pose?.position?.x ?? 0;
+    const targetY = goal.pose?.pose?.position?.y ?? goal.pose?.position?.y ?? 0;
+
+    this.logInfo(`Received navigation goal: (${targetX.toFixed(2)}, ${targetY.toFixed(2)})`);
+
+    await this._navigateToSinglePose(targetX, targetY, isCanceled, feedbackCb);
+    return {};
+  }
+
+  async _executeFollowWaypoints(goal, goalId, feedbackCb, isCanceled) {
+    const poses = goal.poses || [];
+    const missedIndices = [];
+
+    if (poses.length === 0) {
+      this.logWarn('No waypoints provided');
+      return { missed_waypoint_indices: [] };
     }
 
-    return {};
+    this.logInfo(`Following ${poses.length} waypoints`);
+    this._visualizeWaypoints(poses);
+
+    for (let i = 0; i < poses.length; i++) {
+      if (isCanceled()) {
+        this._stopRobot();
+        this.logInfo('Waypoint following cancelled');
+        this._clearWaypoints();
+        return { missed_waypoint_indices: missedIndices };
+      }
+
+      const pose = poses[i];
+      const targetX = pose.pose?.position?.x ?? pose.position?.x ?? 0;
+      const targetY = pose.pose?.position?.y ?? pose.position?.y ?? 0;
+
+      this.logInfo(`Navigating to waypoint ${i + 1}/${poses.length}: (${targetX.toFixed(2)}, ${targetY.toFixed(2)})`);
+
+      // Send waypoint-level feedback
+      feedbackCb({
+        current_waypoint: i,
+        number_of_poses: poses.length,
+        distance_remaining: this._distance(this.currentPose, { x: targetX, y: targetY })
+      });
+
+      const result = await this._navigateToSinglePose(targetX, targetY, isCanceled, (navFeedback) => {
+        feedbackCb({
+          current_waypoint: i,
+          number_of_poses: poses.length,
+          distance_remaining: navFeedback.distance_remaining
+        });
+      });
+
+      if (!result.success) {
+        this.logWarn(`Missed waypoint ${i} at (${targetX.toFixed(2)}, ${targetY.toFixed(2)})`);
+        missedIndices.push(i);
+      }
+    }
+
+    this._clearWaypoints();
+    this.logInfo(`Waypoint following complete. Missed ${missedIndices.length}/${poses.length} waypoints`);
+    return { missed_waypoint_indices: missedIndices };
+  }
+
+  /**
+   * Execute recovery behavior: spin in place, back up, stop
+   */
+  async _executeRecovery(attemptNumber) {
+    this._publishRecovery(`Recovery attempt ${attemptNumber}: spinning in place`);
+    this.logInfo(`Recovery attempt ${attemptNumber}: spinning in place`);
+
+    // Spin in place for ~2 seconds
+    const spinEnd = Date.now() + 2000;
+    while (Date.now() < spinEnd && this.running) {
+      this.cmdVelPub.publish({
+        linear: { x: 0, y: 0, z: 0 },
+        angular: { x: 0, y: 0, z: 2.0 }
+      });
+      await this._sleep(100);
+    }
+
+    this._publishRecovery(`Recovery attempt ${attemptNumber}: backing up`);
+    this.logInfo(`Recovery attempt ${attemptNumber}: backing up`);
+
+    // Back up for ~0.5 seconds
+    const backupEnd = Date.now() + 500;
+    while (Date.now() < backupEnd && this.running) {
+      this.cmdVelPub.publish({
+        linear: { x: -0.5, y: 0, z: 0 },
+        angular: { x: 0, y: 0, z: 0 }
+      });
+      await this._sleep(100);
+    }
+
+    this._stopRobot();
+    this._publishRecovery(`Recovery attempt ${attemptNumber}: complete`);
+    this.logInfo(`Recovery attempt ${attemptNumber}: complete`);
+  }
+
+  _publishRecovery(msg) {
+    this.recoveryPub.publish({ data: msg });
+  }
+
+  _visualizeWaypoints(poses) {
+    const waypoints = poses.map(p => ({
+      x: p.pose?.position?.x ?? p.position?.x ?? 0,
+      y: p.pose?.position?.y ?? p.position?.y ?? 0
+    }));
+    window.dispatchEvent(new CustomEvent(Events.WAYPOINTS_UPDATE, {
+      detail: { waypoints }
+    }));
+  }
+
+  _clearWaypoints() {
+    window.dispatchEvent(new CustomEvent(Events.WAYPOINTS_CLEARED));
   }
 
   /**
@@ -349,6 +530,7 @@ export class NavigatorNode extends Node {
   onShutdown() {
     this._stopRobot();
     this._clearPath();
+    this._clearWaypoints();
     this.isNavigating = false;
   }
 }

@@ -19,6 +19,8 @@ export const Events = {
   // Navigation
   PATH_PLANNED: 'path-planned',
   PATH_CLEARED: 'path-cleared',
+  WAYPOINTS_UPDATE: 'waypoints-update',
+  WAYPOINTS_CLEARED: 'waypoints-cleared',
 
   // Loop closure
   LOOP_CLOSURE_DETECTED: 'loop-closure-detected',

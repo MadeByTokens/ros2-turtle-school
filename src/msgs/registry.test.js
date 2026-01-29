@@ -317,6 +317,21 @@ describe('MessageRegistry', () => {
     });
   });
 
+  describe('FollowWaypoints action registration', () => {
+    it('can register and retrieve FollowWaypoints action', () => {
+      const followDef = {
+        name: 'FollowWaypoints',
+        type: 'action',
+        goal: { poses: { type: 'geometry_msgs/msg/PoseStamped[]' } },
+        result: { missed_waypoint_indices: { type: 'int32[]', default: [] } },
+        feedback: { current_waypoint: { type: 'int32' }, number_of_poses: { type: 'int32' }, distance_remaining: { type: 'float32' } }
+      };
+
+      registry.registerAction('nav2_msgs/action/FollowWaypoints', followDef);
+      expect(registry.getAction('nav2_msgs/action/FollowWaypoints')).toEqual(followDef);
+    });
+  });
+
   describe('getDefinition', () => {
     it('returns definition string for messages', () => {
       registry.registerMessage('test/msg/Test', {
