@@ -158,7 +158,7 @@ class App {
     });
 
     // Quick command buttons
-    const quickButtons = document.querySelectorAll('#quick-commands button');
+    const quickButtons = document.querySelectorAll('#quick-commands button[data-cmd]');
     quickButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         const cmd = btn.dataset.cmd;
@@ -170,6 +170,23 @@ class App {
           }
         }
       });
+    });
+
+    // Paste button for mobile
+    document.getElementById('paste-btn')?.addEventListener('click', async () => {
+      const terminal = this.terminalManager.getActiveTerminal();
+      if (!terminal) return;
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          for (const char of text) {
+            if (char === '\n' || char === '\r') continue;
+            terminal._insertChar(char);
+          }
+        }
+      } catch (err) {
+        console.error('Paste failed:', err);
+      }
     });
 
     // Teleop active indicator
