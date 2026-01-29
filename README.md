@@ -402,6 +402,141 @@ The SLAM node uses log-odds Bayesian updating:
 - Cells where the ray terminates are marked as more likely occupied
 - Publishes the occupancy grid to `/map` at 2 Hz
 
+## Nav2 Path Planning Tutorial
+
+### Prerequisites
+
+Complete the SLAM tutorial above first — you need a running turtlesim, SLAM node, and a partially explored map.
+
+### Start the Navigator
+
+Open a new terminal and launch the Nav2 path planner:
+
+```bash
+ros2 run nav2_simple_navigator navigator_node
+```
+
+The navigator subscribes to `/map` (from SLAM) and `/turtle1/pose`, and creates a `/navigate_to_pose` action server.
+
+### Send a Navigation Goal
+
+Send the turtle to a target coordinate:
+
+```bash
+ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose "{pose: {position: {x: 8.0, y: 8.0}}}"
+
+# With live feedback showing distance remaining:
+ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose "{pose: {position: {x: 2.0, y: 9.0}}}" --feedback
+```
+
+The navigator plans a path using A* on the occupancy grid, publishes it to `/plan`, and drives the turtle along the path.
+
+### Monitor and Inspect
+
+```bash
+# See the planned path
+ros2 topic echo /plan
+
+# Check the navigator node
+ros2 node info /navigator_node
+
+# See all available actions
+ros2 action list -t
+```
+
+### Tune Navigator Parameters
+
+```bash
+# How close the turtle needs to get to the goal (meters)
+ros2 param set /navigator_node goal_tolerance 0.5
+
+# Maximum driving speed (m/s)
+ros2 param set /navigator_node max_speed 2.0
+
+# Occupancy threshold — cells above this value are treated as obstacles (0-100)
+ros2 param set /navigator_node obstacle_threshold 30
+```
+
+Parameters:
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `goal_tolerance` | 0.3 | Distance (m) to consider goal reached |
+| `max_speed` | 1.5 | Maximum linear speed (m/s) |
+| `max_angular_speed` | 2.5 | Maximum angular speed (rad/s) |
+| `obstacle_threshold` | 50 | Cells with occupancy >= this are obstacles |
+
+### Loop Closure & Odometry Drift
+
+Explore why loop closure matters by enabling simulated odometry drift:
+
+```bash
+# Enable drift simulation — the map will gradually distort
+ros2 param set /slam_node drift_enabled true
+ros2 param set /slam_node drift_rate 0.02
+
+# Watch for loop closure detection events
+ros2 topic echo /loop_closures
+
+# Drive the turtle in a loop — when it revisits a location,
+# the SLAM node detects the closure and corrects the drift
+```
+
+Loop closure parameters:
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `loop_closure_enabled` | true | Enable loop closure detection |
+| `loop_closure_distance` | 0.5 | Distance threshold to trigger closure (m) |
+| `loop_closure_min_travel` | 3.0 | Minimum travel before checking (m) |
+| `loop_closure_cooldown` | 5000 | Milliseconds between detections |
+| `drift_enabled` | false | Enable odometry drift simulation |
+| `drift_rate` | 0.005 | Drift magnitude per meter traveled |
+| `drift_max` | 0.3 | Maximum cumulative drift (m) |
+
+### Localization Against a Pre-built Map
+
+Save a map you've built and switch to localization mode (no new mapping):
+
+```bash
+# Save the current map
+ros2 service call /slam/save_map std_srvs/srv/Empty
+
+# Switch to localization mode — the map stops updating
+ros2 param set /slam_node localization_mode true
+
+# Switch back to mapping mode
+ros2 param set /slam_node localization_mode false
+
+# Reload the saved map
+ros2 service call /slam/load_map std_srvs/srv/Empty
+```
+
+### TF2 Frame Queries
+
+Explore coordinate transforms between frames:
+
+```bash
+# Publish a static transform from world to base_link
+ros2 run tf2_ros static_transform_publisher 0 0 0 0 0 0 world base_link
+
+# Continuously print the transform between two frames
+ros2 run tf2_ros tf2_echo world base_link
+
+# Print the full frame tree
+ros2 run tf2_ros view_frames
+
+# Monitor all TF broadcasts and their rates
+ros2 run tf2_ros tf2_monitor
+```
+
+### How A* Path Planning Works
+
+The navigator uses the A* algorithm on the SLAM occupancy grid:
+1. Converts start/goal world positions to grid cells
+2. Searches the grid using A* with 8-connected neighbors (diagonal movement allowed)
+3. Avoids cells with occupancy >= `obstacle_threshold`
+4. Reconstructs the path and publishes it to `/plan`
+5. Follows the path using a proportional controller publishing to `/turtle1/cmd_vel`
+
 ## Testing
 
 ### Automated Tests

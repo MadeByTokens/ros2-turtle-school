@@ -36,6 +36,7 @@ export class HelpModal {
         <button class="help-tab active" data-tab="quickstart" role="tab" aria-selected="true" aria-controls="panel-quickstart">Quick Start</button>
         <button class="help-tab" data-tab="commands" role="tab" aria-selected="false" aria-controls="panel-commands">Commands</button>
         <button class="help-tab" data-tab="slam" role="tab" aria-selected="false" aria-controls="panel-slam">SLAM Tutorial</button>
+        <button class="help-tab" data-tab="nav2" role="tab" aria-selected="false" aria-controls="panel-nav2">Nav2 Tutorial</button>
       </div>
     `;
   }
@@ -51,6 +52,9 @@ export class HelpModal {
         </div>
         <div id="panel-slam" class="help-panel" role="tabpanel" aria-labelledby="tab-slam" hidden>
           ${this._renderSlam()}
+        </div>
+        <div id="panel-nav2" class="help-panel" role="tabpanel" aria-labelledby="tab-nav2" hidden>
+          ${this._renderNav2()}
         </div>
       </div>
     `;
@@ -252,6 +256,84 @@ export class HelpModal {
 
           <h4>SLAM Cell Values</h4>
           <p><code>ros2 topic echo /map</code> shows OccupancyGrid data: <strong>-1</strong> = unknown, <strong>0</strong> = free, <strong>100</strong> = occupied.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  _renderNav2() {
+    return `
+      <div class="help-content">
+        <div class="slam-tutorial">
+          <p>Learn autonomous navigation: build a map with SLAM, then use Nav2 to plan and follow paths.</p>
+
+          <h4>Step 1: Build a Map</h4>
+          <p>Follow the SLAM Tutorial first to build a map. You need three terminals:</p>
+          <code>ros2 run turtlesim turtlesim_node</code><br>
+          <code>ros2 run simple_slam slam_node</code><br>
+          <code>ros2 run teleop_twist_keyboard teleop_twist_keyboard</code>
+          <p>Drive the turtle around with <strong>W/A/S/D</strong> to scan all obstacles.</p>
+
+          <h4>Step 2: Start the Navigator</h4>
+          <p>Open a new terminal and start the Nav2 path planner:</p>
+          <code>ros2 run nav2_simple_navigator navigator_node</code>
+          <p>The navigator subscribes to <code>/map</code> from SLAM and waits for goals.</p>
+
+          <h4>Step 3: Send a Navigation Goal</h4>
+          <p>Send the turtle to a target position using an action goal:</p>
+          <code>ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose "{pose: {position: {x: 8.0, y: 8.0}}}"</code>
+          <p>Watch the turtle plan a path and drive itself to the goal!</p>
+
+          <h4>Step 4: Monitor Navigation</h4>
+          <table class="help-table">
+            <tr><td><code>ros2 topic echo /plan</code></td><td>See the planned path waypoints</td></tr>
+            <tr><td><code>ros2 action send_goal ... --feedback</code></td><td>Watch distance remaining</td></tr>
+            <tr><td><code>ros2 param get /navigator_node goal_tolerance</code></td><td>Check goal tolerance</td></tr>
+          </table>
+
+          <h4>Step 5: Tune Navigator Parameters</h4>
+          <table class="help-table">
+            <tr><td><code>ros2 param set /navigator_node goal_tolerance 0.5</code></td><td>Increase tolerance (reach goals sooner)</td></tr>
+            <tr><td><code>ros2 param set /navigator_node max_speed 2.0</code></td><td>Drive faster</td></tr>
+            <tr><td><code>ros2 param set /navigator_node obstacle_threshold 30</code></td><td>Avoid even partially occupied cells</td></tr>
+          </table>
+
+          <h4>Step 6: Loop Closure &amp; Drift</h4>
+          <p>Explore how odometry drift affects mapping and why loop closure matters:</p>
+          <table class="help-table">
+            <tr><td><code>ros2 param set /slam_node drift_enabled true</code></td><td>Enable simulated odometry drift</td></tr>
+            <tr><td><code>ros2 param set /slam_node drift_rate 0.02</code></td><td>Increase drift rate to see the effect</td></tr>
+            <tr><td><code>ros2 topic echo /loop_closures</code></td><td>Watch for loop closure events</td></tr>
+            <tr><td><code>ros2 param set /slam_node loop_closure_enabled true</code></td><td>Enable loop closure correction</td></tr>
+          </table>
+          <p>Drive in a loop and watch the SLAM node detect when you revisit a location!</p>
+
+          <h4>Step 7: Localization Mode</h4>
+          <p>Save your map and switch to localization (no new mapping):</p>
+          <table class="help-table">
+            <tr><td><code>ros2 service call /slam/save_map std_srvs/srv/Empty</code></td><td>Save the current map</td></tr>
+            <tr><td><code>ros2 param set /slam_node localization_mode true</code></td><td>Switch to localization mode</td></tr>
+            <tr><td><code>ros2 param set /slam_node localization_mode false</code></td><td>Switch back to mapping</td></tr>
+          </table>
+
+          <h4>Step 8: TF2 Frame Queries</h4>
+          <p>Explore coordinate transforms between frames:</p>
+          <table class="help-table">
+            <tr><td><code>ros2 run tf2_ros static_transform_publisher 0 0 0 0 0 0 world base_link</code></td><td>Publish a transform</td></tr>
+            <tr><td><code>ros2 run tf2_ros tf2_echo world base_link</code></td><td>Continuously print the transform</td></tr>
+            <tr><td><code>ros2 run tf2_ros view_frames</code></td><td>Print the frame tree</td></tr>
+            <tr><td><code>ros2 run tf2_ros tf2_monitor</code></td><td>Monitor all TF broadcasts</td></tr>
+          </table>
+
+          <h4>How A* Path Planning Works</h4>
+          <p>The navigator uses the A* algorithm on the occupancy grid:</p>
+          <ul>
+            <li>Converts start and goal positions to grid cells</li>
+            <li>Searches the grid using A* with 8-connected neighbors</li>
+            <li>Avoids cells with occupancy above <code>obstacle_threshold</code></li>
+            <li>Publishes the path to <code>/plan</code></li>
+            <li>Follows the path using a proportional controller on <code>/turtle1/cmd_vel</code></li>
+          </ul>
         </div>
       </div>
     `;
