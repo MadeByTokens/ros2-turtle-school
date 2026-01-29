@@ -25,6 +25,7 @@ Browser-based ROS2 CLI emulator for educational purposes. Runs entirely client-s
 - **Nav2 Path Planning** - A* path planning with NavigateToPose action
 - **Loop Closure** - Educational pose-graph loop closure detection with optional drift simulation
 - **Localization Mode** - Save and localize against a pre-built map
+- **QoS Profiles** - Quality of Service settings (reliability, durability, history) with named presets and verbose display
 - **Dynamic Reconfigure** - Parameter validation callbacks (accept/reject with reasons)
 - **Copy/Paste Support** - Right-click context menu in terminal
 
@@ -241,6 +242,21 @@ parameters: {
 // Usage
 const val = this.getParameter('my_param');
 this.setParameter('my_param', 100);
+```
+
+**QoS Profiles:**
+```bash
+# Show QoS profiles for all publishers/subscribers on a topic
+ros2 topic info /turtle1/cmd_vel --verbose
+
+# Publish with custom QoS
+ros2 topic pub /test std_msgs/msg/String "{data: 'hello'}" --qos-reliability best_effort
+
+# Subscribe with a named QoS profile
+ros2 topic echo /scan --qos-profile sensor_data
+
+# Available profiles: default, sensor_data, services_default, parameters
+# Individual flags: --qos-reliability, --qos-durability, --qos-history, --qos-depth
 ```
 
 **Events (window events with constants):**
@@ -549,13 +565,14 @@ npm test -- --run     # Run tests once
 npm run test:coverage # Run tests with coverage report
 ```
 
-Test suite covers the core ROS 2 emulation layer (341 tests across 10 files):
+Test suite covers the core ROS 2 emulation layer (386 tests across 11 files):
 
 | Test File | Module | Tests |
 |-----------|--------|-------|
-| `src/cli/ros2_commands.test.js` | CLI command handlers (all ros2 subcommands) | 90 |
+| `src/cli/ros2_commands.test.js` | CLI command handlers (all ros2 subcommands) | 97 |
 | `src/core/WorldState.test.js` | Collision, raycasting, lidar | 50 |
-| `src/comm/LocalComm.test.js` | Pub/sub, services, actions | 43 |
+| `src/comm/LocalComm.test.js` | Pub/sub, services, actions, QoS storage | 46 |
+| `src/utils/qos.test.js` | QoS profiles, parsing, formatting | 35 |
 | `src/cli/messageParser.test.js` | YAML-like message parsing | 33 |
 | `src/core/Node.test.js` | Parameters, timers, lifecycle | 33 |
 | `src/msgs/registry.test.js` | Message/service/action registry | 31 |
@@ -599,7 +616,7 @@ View logs: run `rqt_console` in terminal.
 
 - No real networking (single browser context)
 - Simplified message validation
-- No QoS profiles
+- QoS profiles are stored and displayed but not enforced at the transport level
 - Lidar simulation is basic raycasting
 - SLAM is educational, not production-grade
 - Nav2 path planning uses simple A* (no costmaps or DWA local planner)

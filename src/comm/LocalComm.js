@@ -1,4 +1,5 @@
 import { CommInterface } from './CommInterface.js';
+import { normalizeQoS } from '../utils/qos.js';
 
 /**
  * Local in-browser communication implementation.
@@ -37,10 +38,10 @@ export class LocalComm extends CommInterface {
     return this.topics.get(topic);
   }
 
-  subscribe(topic, msgType, callback, nodeId = null) {
+  subscribe(topic, msgType, callback, nodeId = null, qos) {
     const topicData = this._ensureTopic(topic, msgType);
     const subId = this._generateId();
-    topicData.subscribers.set(subId, { callback, msgType, nodeId });
+    topicData.subscribers.set(subId, { callback, msgType, nodeId, qos: normalizeQoS(qos) });
     return subId;
   }
 
@@ -74,10 +75,10 @@ export class LocalComm extends CommInterface {
     }
   }
 
-  advertise(topic, msgType, nodeId) {
+  advertise(topic, msgType, nodeId, qos) {
     const topicData = this._ensureTopic(topic, msgType);
     const pubId = this._generateId();
-    topicData.publishers.set(pubId, { nodeId, msgType });
+    topicData.publishers.set(pubId, { nodeId, msgType, qos: normalizeQoS(qos) });
     return pubId;
   }
 

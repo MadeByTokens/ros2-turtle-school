@@ -2,6 +2,7 @@ import { SimDDS } from '../core/SimDDS.js';
 import { parseMessage, formatMessage } from './messageParser.js';
 import { getMessage, findMessages } from '../msgs/index.js';
 import { commandRegistry } from './commandRegistry.js';
+import { formatQoS, parseQoSArgs } from '../utils/qos.js';
 
 /**
  * Handle ros2 topic commands
@@ -128,11 +129,17 @@ function handleInfo(args, terminal) {
     terminal.writeln('Publishers:');
     for (const pub of topicInfo.publishers) {
       terminal.writeln(`  Node: ${pub.nodeId}`);
+      for (const line of formatQoS(pub.qos, '    ')) {
+        terminal.writeln(line);
+      }
     }
     terminal.writeln('');
     terminal.writeln('Subscribers:');
     for (const sub of topicInfo.subscribers) {
-      terminal.writeln(`  Node: (subscription)`);
+      terminal.writeln(`  Node: ${sub.nodeId || '(anonymous)'}`);
+      for (const line of formatQoS(sub.qos, '    ')) {
+        terminal.writeln(line);
+      }
     }
   }
 }
@@ -185,12 +192,26 @@ function handleFind(args, terminal) {
  */
 function handleEcho(args, terminal) {
   if (args.length === 0) {
-    terminal.writeln('usage: ros2 topic echo <topic_name>');
+    terminal.writeln('usage: ros2 topic echo <topic_name> [--qos-*]');
     terminal.finishCommand();
     return;
   }
 
-  const topicName = args[0];
+  // Parse QoS flags
+  const { qos, remaining, error } = parseQoSArgs(args);
+  if (error) {
+    terminal.writeln(`\x1b[31m${error}\x1b[0m`);
+    terminal.finishCommand();
+    return;
+  }
+
+  const topicName = remaining[0];
+  if (!topicName) {
+    terminal.writeln('usage: ros2 topic echo <topic_name> [--qos-*]');
+    terminal.finishCommand();
+    return;
+  }
+
   let topicInfo = SimDDS.getTopicInfo(topicName);
   let sub = null;
   let pollInterval = null;
@@ -204,7 +225,7 @@ function handleEcho(args, terminal) {
     sub = SimDDS.subscribe(topicName, type, (msg) => {
       terminal.writeln('---');
       terminal.writeln(formatMessage(msg));
-    });
+    }, qos);
   };
 
   if (!topicInfo) {
@@ -248,7 +269,15 @@ function handleEcho(args, terminal) {
  * Handle ros2 topic pub <topic> <type> "<data>"
  */
 async function handlePub(args, terminal) {
-  // Parse arguments
+  // Parse QoS flags first
+  const { qos, remaining, error } = parseQoSArgs(args);
+  if (error) {
+    terminal.writeln(`\x1b[31m${error}\x1b[0m`);
+    terminal.finishCommand();
+    return;
+  }
+
+  // Parse remaining arguments
   let once = false;
   let rate = 1;
   let waitCount = 0;
@@ -256,15 +285,15 @@ async function handlePub(args, terminal) {
   let msgType = null;
   let msgData = null;
 
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
+  for (let i = 0; i < remaining.length; i++) {
+    const arg = remaining[i];
 
     if (arg === '--once' || arg === '-1') {
       once = true;
     } else if (arg === '-r' || arg === '--rate') {
-      rate = parseFloat(args[++i]) || 1;
+      rate = parseFloat(remaining[++i]) || 1;
     } else if (arg === '-w' || arg === '--wait') {
-      waitCount = parseInt(args[++i]) || 0;
+      waitCount = parseInt(remaining[++i]) || 0;
     } else if (!topicName) {
       topicName = arg;
     } else if (!msgType) {
@@ -275,7 +304,7 @@ async function handlePub(args, terminal) {
   }
 
   if (!topicName || !msgType) {
-    terminal.writeln('usage: ros2 topic pub [--once] [-r RATE] <topic> <msg_type> "<data>"');
+    terminal.writeln('usage: ros2 topic pub [--once] [-r RATE] <topic> <msg_type> "<data>" [--qos-*]');
     terminal.finishCommand();
     return;
   }
@@ -298,6 +327,9 @@ async function handlePub(args, terminal) {
   const data = msgData ? parseMessage(msgData) : {};
   const message = msgDef.create(data);
 
+  // Register a tracked publisher so QoS shows in topic info --verbose
+  const pubId = SimDDS.comm.advertise(topicName, msgType, '/_cli_pub', qos);
+
   terminal.writeln(`publisher: beginning loop`);
   terminal.writeln(`publishing #1: ${JSON.stringify(message)}`);
 
@@ -305,6 +337,7 @@ async function handlePub(args, terminal) {
   SimDDS.publish(topicName, msgType, message);
 
   if (once) {
+    SimDDS.comm.unadvertise(pubId);
     terminal.finishCommand();
     return;
   }
@@ -319,7 +352,10 @@ async function handlePub(args, terminal) {
 
   // Store for Ctrl+C cleanup
   terminal.addSubscription({
-    destroy: () => clearInterval(interval)
+    destroy: () => {
+      clearInterval(interval);
+      SimDDS.comm.unadvertise(pubId);
+    }
   });
 }
 

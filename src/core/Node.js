@@ -158,18 +158,25 @@ export class Node {
 
   /**
    * Create a publisher
+   * @param {string} topic - Topic name
+   * @param {string} msgType - Message type
+   * @param {Object} [qos] - QoS profile { reliability, durability, history, depth }
    */
-  createPublisher(topic, msgType) {
-    const pub = this.simDDS.createPublisher(this.fullName, topic, msgType);
+  createPublisher(topic, msgType, qos) {
+    const pub = this.simDDS.createPublisher(this.fullName, topic, msgType, qos);
     this.publishers.push(pub);
     return pub;
   }
 
   /**
    * Create a subscription
+   * @param {string} topic - Topic name
+   * @param {string} msgType - Message type
+   * @param {Function} callback - Message callback
+   * @param {Object} [qos] - QoS profile { reliability, durability, history, depth }
    */
-  createSubscription(topic, msgType, callback) {
-    const sub = this.simDDS.createSubscription(this.fullName, topic, msgType, callback.bind(this));
+  createSubscription(topic, msgType, callback, qos) {
+    const sub = this.simDDS.createSubscription(this.fullName, topic, msgType, callback.bind(this), qos);
     this.subscriptions.push(sub);
     return sub;
   }

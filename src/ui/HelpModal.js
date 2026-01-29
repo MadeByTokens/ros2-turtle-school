@@ -121,12 +121,23 @@ export class HelpModal {
           <tr><td><code>ros2 topic list</code></td><td>List all topics</td></tr>
           <tr><td><code>ros2 topic list -t</code></td><td>List with types</td></tr>
           <tr><td><code>ros2 topic info &lt;topic&gt;</code></td><td>Show topic info</td></tr>
+          <tr><td><code>ros2 topic info &lt;topic&gt; --verbose</code></td><td>Show info with QoS profiles</td></tr>
           <tr><td><code>ros2 topic type &lt;topic&gt;</code></td><td>Show message type</td></tr>
           <tr><td><code>ros2 topic echo &lt;topic&gt;</code></td><td>Print messages</td></tr>
           <tr><td><code>ros2 topic pub &lt;topic&gt; &lt;type&gt; "&lt;yaml&gt;"</code></td><td>Publish message</td></tr>
           <tr><td><code>ros2 topic pub --once ...</code></td><td>Publish once</td></tr>
           <tr><td><code>ros2 topic pub -r 10 ...</code></td><td>Publish at rate</td></tr>
           <tr><td><code>ros2 topic hz &lt;topic&gt;</code></td><td>Show publish rate</td></tr>
+          <tr><td><code>ros2 topic bw &lt;topic&gt;</code></td><td>Show bandwidth</td></tr>
+        </table>
+
+        <h3>QoS Flags (for pub/echo)</h3>
+        <table class="help-table">
+          <tr><td><code>--qos-profile &lt;name&gt;</code></td><td>Use named profile (sensor_data, default, etc.)</td></tr>
+          <tr><td><code>--qos-reliability &lt;policy&gt;</code></td><td>reliable or best_effort</td></tr>
+          <tr><td><code>--qos-durability &lt;policy&gt;</code></td><td>volatile or transient_local</td></tr>
+          <tr><td><code>--qos-history &lt;policy&gt;</code></td><td>keep_last or keep_all</td></tr>
+          <tr><td><code>--qos-depth &lt;n&gt;</code></td><td>Queue depth for keep_last (default: 10)</td></tr>
         </table>
 
         <h3>ros2 service Commands</h3>

@@ -9,9 +9,11 @@ export class CommInterface {
    * @param {string} topic - Topic name
    * @param {string} msgType - Message type
    * @param {Function} callback - Callback function(msg)
+   * @param {string} [nodeId] - Subscriber node ID
+   * @param {Object} [qos] - QoS profile { reliability, durability, history, depth }
    * @returns {string} Subscription ID
    */
-  subscribe(topic, msgType, callback) {
+  subscribe(topic, msgType, callback, nodeId, qos) {
     throw new Error('subscribe() must be implemented');
   }
 
@@ -38,9 +40,10 @@ export class CommInterface {
    * @param {string} topic - Topic name
    * @param {string} msgType - Message type
    * @param {string} nodeId - Publisher node ID
+   * @param {Object} [qos] - QoS profile { reliability, durability, history, depth }
    * @returns {string} Publisher ID
    */
-  advertise(topic, msgType, nodeId) {
+  advertise(topic, msgType, nodeId, qos) {
     throw new Error('advertise() must be implemented');
   }
 

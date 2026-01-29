@@ -335,7 +335,7 @@ describe('Node', () => {
       const pub = node.createPublisher('/topic', 'std_msgs/msg/String');
 
       expect(mockSimDDS.createPublisher).toHaveBeenCalledWith(
-        '/test_node', '/topic', 'std_msgs/msg/String'
+        '/test_node', '/topic', 'std_msgs/msg/String', undefined
       );
       expect(node.publishers).toContain(pub);
     });
@@ -345,7 +345,7 @@ describe('Node', () => {
       const sub = node.createSubscription('/topic', 'std_msgs/msg/String', callback);
 
       expect(mockSimDDS.createSubscription).toHaveBeenCalledWith(
-        '/test_node', '/topic', 'std_msgs/msg/String', expect.any(Function)
+        '/test_node', '/topic', 'std_msgs/msg/String', expect.any(Function), undefined
       );
       expect(node.subscriptions).toContain(sub);
     });

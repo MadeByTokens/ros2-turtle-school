@@ -41,12 +41,16 @@ vi.mock('../core/SimDDS.js', () => {
       getServiceInfo: (name) => state.serviceInfo[name],
       getActions: () => state.actions,
       getActionInfo: (name) => state.actionInfo[name],
-      subscribe: vi.fn((topic, type, cb) => {
+      subscribe: vi.fn((topic, type, cb, qos) => {
         state.subscribeCb = cb;
         return 'sub_1';
       }),
       unsubscribe: vi.fn(),
       publish: vi.fn(),
+      comm: {
+        advertise: vi.fn(() => 'pub_1'),
+        unadvertise: vi.fn(),
+      },
       callService: vi.fn(async () => state.callServiceResult),
       sendActionGoal: vi.fn(async (name, type, goal, fbCb) => {
         if (fbCb) fbCb({ remaining: 0.5 });
@@ -409,6 +413,7 @@ describe('ros2 topic (Tutorial: Understanding Topics)', () => {
         '/turtle1/cmd_vel',
         'geometry_msgs/msg/Twist',
         expect.any(Function),
+        null,
       );
 
       // Simulate receiving a message
@@ -441,6 +446,69 @@ describe('ros2 topic (Tutorial: Understanding Topics)', () => {
       expect(t.lines[0]).toContain('usage:');
       expect(t.finishCommand).toHaveBeenCalled();
     });
+
+    it('passes QoS flags to subscribe', async () => {
+      SimDDS._state.topicInfo['/turtle1/cmd_vel'] = {
+        name: '/turtle1/cmd_vel',
+        type: 'geometry_msgs/msg/Twist',
+      };
+
+      const t = createMockTerminal();
+      await handleRos2Topic([
+        'echo', '/turtle1/cmd_vel',
+        '--qos-reliability', 'best_effort',
+        '--qos-durability', 'transient_local',
+      ], t);
+
+      expect(SimDDS.subscribe).toHaveBeenCalledWith(
+        '/turtle1/cmd_vel',
+        'geometry_msgs/msg/Twist',
+        expect.any(Function),
+        expect.objectContaining({
+          reliability: 'best_effort',
+          durability: 'transient_local',
+        }),
+      );
+    });
+
+    it('passes named QoS profile to subscribe', async () => {
+      SimDDS._state.topicInfo['/turtle1/cmd_vel'] = {
+        name: '/turtle1/cmd_vel',
+        type: 'geometry_msgs/msg/Twist',
+      };
+
+      const t = createMockTerminal();
+      await handleRos2Topic([
+        'echo', '/turtle1/cmd_vel',
+        '--qos-profile', 'sensor_data',
+      ], t);
+
+      expect(SimDDS.subscribe).toHaveBeenCalledWith(
+        '/turtle1/cmd_vel',
+        'geometry_msgs/msg/Twist',
+        expect.any(Function),
+        expect.objectContaining({
+          reliability: 'best_effort',
+          depth: 5,
+        }),
+      );
+    });
+
+    it('shows error for invalid QoS value', async () => {
+      SimDDS._state.topicInfo['/turtle1/cmd_vel'] = {
+        name: '/turtle1/cmd_vel',
+        type: 'geometry_msgs/msg/Twist',
+      };
+
+      const t = createMockTerminal();
+      await handleRos2Topic([
+        'echo', '/turtle1/cmd_vel',
+        '--qos-reliability', 'invalid_value',
+      ], t);
+
+      expect(t.lines[0]).toContain('Invalid reliability');
+      expect(t.finishCommand).toHaveBeenCalled();
+    });
   });
 
   describe('ros2 topic info', () => {
@@ -465,6 +533,60 @@ describe('ros2 topic (Tutorial: Understanding Topics)', () => {
       await handleRos2Topic(['info', '/nonexistent'], t);
 
       expect(t.lines[0]).toContain('not found');
+    });
+
+    it('shows QoS profiles in verbose mode', async () => {
+      SimDDS._state.topicInfo['/turtle1/cmd_vel'] = {
+        name: '/turtle1/cmd_vel',
+        type: 'geometry_msgs/msg/Twist',
+        publishers: [{
+          nodeId: '/teleop_turtle',
+          qos: { reliability: 'reliable', durability: 'volatile', history: 'keep_last', depth: 10 },
+        }],
+        subscribers: [{
+          nodeId: '/turtlesim',
+          qos: { reliability: 'best_effort', durability: 'transient_local', history: 'keep_last', depth: 5 },
+        }],
+      };
+
+      const t = createMockTerminal();
+      await handleRos2Topic(['info', '/turtle1/cmd_vel', '--verbose'], t);
+
+      // Basic info
+      expect(t.lines).toContain('Type: geometry_msgs/msg/Twist');
+      expect(t.lines).toContain('Publisher count: 1');
+      expect(t.lines).toContain('Subscription count: 1');
+
+      // Publisher QoS
+      expect(t.lines).toContain('Publishers:');
+      expect(t.lines).toContain('  Node: /teleop_turtle');
+      expect(t.lines).toContain('    Reliability: RELIABLE');
+      expect(t.lines).toContain('    Durability: VOLATILE');
+      expect(t.lines).toContain('    History (Depth): KEEP_LAST (10)');
+
+      // Subscriber QoS
+      expect(t.lines).toContain('Subscribers:');
+      expect(t.lines).toContain('  Node: /turtlesim');
+      expect(t.lines).toContain('    Reliability: BEST_EFFORT');
+      expect(t.lines).toContain('    Durability: TRANSIENT_LOCAL');
+      expect(t.lines).toContain('    History (Depth): KEEP_LAST (5)');
+    });
+
+    it('shows default QoS when qos is undefined', async () => {
+      SimDDS._state.topicInfo['/turtle1/cmd_vel'] = {
+        name: '/turtle1/cmd_vel',
+        type: 'geometry_msgs/msg/Twist',
+        publishers: [{ nodeId: '/teleop_turtle' }],
+        subscribers: [{ nodeId: '/turtlesim' }],
+      };
+
+      const t = createMockTerminal();
+      await handleRos2Topic(['info', '/turtle1/cmd_vel', '--verbose'], t);
+
+      // Should still show default QoS values
+      expect(t.lines).toContain('    Reliability: RELIABLE');
+      expect(t.lines).toContain('    Durability: VOLATILE');
+      expect(t.lines).toContain('    History (Depth): KEEP_LAST (10)');
     });
   });
 
@@ -505,6 +627,41 @@ describe('ros2 topic (Tutorial: Understanding Topics)', () => {
       await handleRos2Topic(['pub'], t);
 
       expect(t.lines[0]).toContain('usage:');
+    });
+
+    it('publishes with QoS flags and registers tracked publisher', async () => {
+      const t = createMockTerminal();
+      await handleRos2Topic([
+        'pub', '--once', '/turtle1/cmd_vel',
+        'geometry_msgs/msg/Twist',
+        '{"linear": {"x": 2.0}, "angular": {"z": 1.8}}',
+        '--qos-reliability', 'best_effort',
+      ], t);
+
+      // Should have called comm.advertise with QoS
+      expect(SimDDS.comm.advertise).toHaveBeenCalledWith(
+        '/turtle1/cmd_vel',
+        'geometry_msgs/msg/Twist',
+        '/_cli_pub',
+        expect.objectContaining({
+          reliability: 'best_effort',
+        }),
+      );
+      // Should clean up after --once
+      expect(SimDDS.comm.unadvertise).toHaveBeenCalledWith('pub_1');
+      expect(t.lines.join('\n')).toContain('publishing #1');
+    });
+
+    it('shows error for invalid QoS profile name', async () => {
+      const t = createMockTerminal();
+      await handleRos2Topic([
+        'pub', '--once', '/topic',
+        'geometry_msgs/msg/Twist', '{}',
+        '--qos-profile', 'nonexistent_profile',
+      ], t);
+
+      expect(t.lines[0]).toContain('Unknown QoS profile');
+      expect(t.finishCommand).toHaveBeenCalled();
     });
   });
 
@@ -1261,7 +1418,7 @@ describe('SLAM Tutorial CLI commands', () => {
       await handleRos2Topic(['echo', '/scan'], t);
 
       expect(SimDDS.subscribe).toHaveBeenCalledWith(
-        '/scan', 'sensor_msgs/msg/LaserScan', expect.any(Function),
+        '/scan', 'sensor_msgs/msg/LaserScan', expect.any(Function), null,
       );
     });
 
@@ -1271,7 +1428,7 @@ describe('SLAM Tutorial CLI commands', () => {
       await handleRos2Topic(['echo', '/map'], t);
 
       expect(SimDDS.subscribe).toHaveBeenCalledWith(
-        '/map', 'nav_msgs/msg/OccupancyGrid', expect.any(Function),
+        '/map', 'nav_msgs/msg/OccupancyGrid', expect.any(Function), null,
       );
     });
 

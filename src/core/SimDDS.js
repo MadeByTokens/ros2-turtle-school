@@ -71,10 +71,11 @@ export class SimDDSClass {
    * @param {string} nodeId - Node name
    * @param {string} topic - Topic name
    * @param {string} msgType - Message type
+   * @param {Object} [qos] - QoS profile { reliability, durability, history, depth }
    * @returns {Object} Publisher object with publish() method
    */
-  createPublisher(nodeId, topic, msgType) {
-    const pubId = this.comm.advertise(topic, msgType, nodeId);
+  createPublisher(nodeId, topic, msgType, qos) {
+    const pubId = this.comm.advertise(topic, msgType, nodeId, qos);
     const nodeData = this.nodes.get(nodeId);
     if (nodeData) {
       nodeData.publishers.push(pubId);
@@ -103,10 +104,11 @@ export class SimDDSClass {
    * @param {string} topic - Topic name
    * @param {string} msgType - Message type
    * @param {Function} callback - Message callback
+   * @param {Object} [qos] - QoS profile { reliability, durability, history, depth }
    * @returns {Object} Subscription object
    */
-  createSubscription(nodeId, topic, msgType, callback) {
-    const subId = this.comm.subscribe(topic, msgType, callback, nodeId);
+  createSubscription(nodeId, topic, msgType, callback, qos) {
+    const subId = this.comm.subscribe(topic, msgType, callback, nodeId, qos);
     const nodeData = this.nodes.get(nodeId);
     if (nodeData) {
       nodeData.subscribers.push(subId);
@@ -217,8 +219,8 @@ export class SimDDSClass {
   /**
    * Subscribe to a topic (convenience method for CLI)
    */
-  subscribe(topic, msgType, callback) {
-    return this.comm.subscribe(topic, msgType, callback);
+  subscribe(topic, msgType, callback, qos) {
+    return this.comm.subscribe(topic, msgType, callback, null, qos);
   }
 
   /**

@@ -355,6 +355,43 @@ describe('LocalComm', () => {
       expect(topic1.publishers).toHaveLength(1);
       expect(topic1.subscribers).toHaveLength(1);
     });
+
+    it('stores default QoS when none provided', () => {
+      comm.advertise('/topic', 'std_msgs/msg/String', 'pub_node');
+      comm.subscribe('/topic', 'std_msgs/msg/String', () => {}, 'sub_node');
+
+      const topics = comm.getTopics();
+      const topic = topics.find(t => t.name === '/topic');
+
+      expect(topic.publishers[0].qos).toEqual({
+        reliability: 'reliable',
+        durability: 'volatile',
+        history: 'keep_last',
+        depth: 10,
+      });
+      expect(topic.subscribers[0].qos).toEqual({
+        reliability: 'reliable',
+        durability: 'volatile',
+        history: 'keep_last',
+        depth: 10,
+      });
+    });
+
+    it('stores custom QoS on publisher', () => {
+      const qos = { reliability: 'best_effort', durability: 'transient_local', history: 'keep_last', depth: 5 };
+      comm.advertise('/topic', 'std_msgs/msg/String', 'pub_node', qos);
+
+      const topics = comm.getTopics();
+      expect(topics[0].publishers[0].qos).toEqual(qos);
+    });
+
+    it('stores custom QoS on subscriber', () => {
+      const qos = { reliability: 'best_effort', durability: 'volatile', history: 'keep_all', depth: 1 };
+      comm.subscribe('/topic', 'std_msgs/msg/String', () => {}, 'sub_node', qos);
+
+      const topics = comm.getTopics();
+      expect(topics[0].subscribers[0].qos).toEqual(qos);
+    });
   });
 
   describe('getServices', () => {
