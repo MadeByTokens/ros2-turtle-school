@@ -255,7 +255,9 @@ window.dispatchEvent(new CustomEvent(Events.TURTLESIM_UPDATE, {
 
 ## SLAM Tutorial
 
-Try the built-in SLAM demonstration:
+### Getting Started
+
+Open three terminals and start the required nodes:
 
 ```bash
 # Terminal 1: Start turtlesim
@@ -268,13 +270,132 @@ ros2 run simple_slam slam_node
 ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ```
 
-Click the **Map** button in the canvas toolbar to toggle the occupancy grid overlay. Use the slider to adjust opacity. Drive the turtle around to build a map of the environment.
+Click the **Map** button in the canvas toolbar to toggle the occupancy grid overlay. Use the slider to adjust opacity. Drive the turtle with WASD keys to build a map of the environment.
 
-The SLAM node:
-- Subscribes to `/scan` (lidar) and `/turtle1/pose`
-- Publishes occupancy grid to `/map`
-- Uses log-odds Bayesian updating
-- Color coding: green = free, red = occupied, blue-gray = unknown
+- **White cells** = Free space (lidar rays passed through)
+- **Black cells** = Obstacles (lidar rays hit something)
+- **Gray cells** = Unknown (not yet scanned)
+
+### Inspect the System
+
+Once the nodes are running, use a spare terminal to explore what SLAM is doing:
+
+```bash
+# What nodes are running?
+ros2 node list
+
+# What does the SLAM node subscribe to and publish?
+ros2 node info /slam_node
+
+# What topics are active?
+ros2 topic list -t
+```
+
+### Understand the Messages
+
+Look at the structure of the sensor data and map output:
+
+```bash
+# What does a lidar scan message look like?
+ros2 interface show sensor_msgs/msg/LaserScan
+
+# What does an occupancy grid message look like?
+ros2 interface show nav_msgs/msg/OccupancyGrid
+
+# Watch live lidar data streaming in
+ros2 topic echo /scan
+
+# Watch the occupancy grid update
+ros2 topic echo /map
+```
+
+### Monitor Performance
+
+Check how fast messages are flowing:
+
+```bash
+# Lidar publishes at ~10 Hz
+ros2 topic hz /scan
+
+# Map publishes at ~2 Hz
+ros2 topic hz /map
+
+# How much data is the lidar producing?
+ros2 topic bw /scan
+```
+
+### Tune SLAM Parameters
+
+The SLAM node exposes parameters you can change at runtime:
+
+```bash
+# See all SLAM parameters
+ros2 param list /slam_node
+
+# Check current values
+ros2 param get /slam_node map_resolution
+ros2 param get /slam_node hit_prob
+ros2 param dump /slam_node
+
+# Experiment: increase confidence in obstacle detection
+ros2 param set /slam_node hit_prob 0.95
+
+# Experiment: reduce false-free-space by lowering miss probability
+ros2 param set /slam_node miss_prob 0.1
+```
+
+Parameters:
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `map_resolution` | 0.1 | Meters per grid cell |
+| `map_width` | 110 | Grid width in cells |
+| `map_height` | 110 | Grid height in cells |
+| `hit_prob` | 0.9 | Probability cell is occupied when lidar hits |
+| `miss_prob` | 0.3 | Probability cell is occupied when lidar passes through |
+
+### Record and Replay
+
+Record a mapping session and replay it later:
+
+```bash
+# Record all SLAM-related topics
+ros2 bag record -o my_slam_run /scan /turtle1/pose /map
+
+# Drive the turtle around, then press Ctrl+C to stop recording
+
+# Inspect what was recorded
+ros2 bag info my_slam_run
+
+# Replay the session (start a fresh SLAM node first)
+ros2 bag play my_slam_run
+
+# Replay at half speed for analysis
+ros2 bag play my_slam_run --rate 0.5
+```
+
+### Use Services and Actions
+
+Control the turtle programmatically instead of teleop:
+
+```bash
+# Clear the drawing trails
+ros2 service call /clear std_srvs/srv/Empty
+
+# Rotate the turtle to a specific angle
+ros2 action send_goal /turtle1/rotate_absolute turtlesim/action/RotateAbsolute "{theta: 1.57}"
+
+# Spawn a second turtle
+ros2 service call /spawn turtlesim/srv/Spawn "{x: 2.0, y: 8.0, theta: 0.0, name: 'turtle2'}"
+```
+
+### How It Works
+
+The SLAM node uses log-odds Bayesian updating:
+- Subscribes to `/scan` (lidar) and `/turtle1/pose` (position)
+- Traces each lidar ray through the occupancy grid
+- Cells the ray passes through are marked as more likely free
+- Cells where the ray terminates are marked as more likely occupied
+- Publishes the occupancy grid to `/map` at 2 Hz
 
 ## Testing
 
@@ -288,15 +409,16 @@ npm test -- --run     # Run tests once
 npm run test:coverage # Run tests with coverage report
 ```
 
-Test suite covers the core ROS 2 emulation layer (218 tests across 6 files):
+Test suite covers the core ROS 2 emulation layer (308 tests across 7 files):
 
 | Test File | Module | Tests |
 |-----------|--------|-------|
-| `src/cli/messageParser.test.js` | YAML-like message parsing | 33 |
-| `src/msgs/registry.test.js` | Message/service/action registry | 31 |
-| `src/comm/LocalComm.test.js` | Pub/sub, services, actions | 43 |
+| `src/cli/ros2_commands.test.js` | CLI command handlers (all ros2 subcommands) | 90 |
 | `src/core/WorldState.test.js` | Collision, raycasting, lidar | 50 |
+| `src/comm/LocalComm.test.js` | Pub/sub, services, actions | 43 |
+| `src/cli/messageParser.test.js` | YAML-like message parsing | 33 |
 | `src/core/Node.test.js` | Parameters, timers, lifecycle | 33 |
+| `src/msgs/registry.test.js` | Message/service/action registry | 31 |
 | `src/core/ProcessManager.test.js` | Process spawn, kill, queries | 28 |
 
 ### Runtime Logging

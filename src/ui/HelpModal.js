@@ -180,7 +180,7 @@ export class HelpModal {
     return `
       <div class="help-content">
         <div class="slam-tutorial">
-          <p>Learn how occupancy grid mapping works with our simple SLAM demo:</p>
+          <p>Learn how occupancy grid mapping works with our simple SLAM demo.</p>
 
           <h4>Step 1: Start Turtlesim</h4>
           <p>In Terminal 1:</p>
@@ -209,9 +209,45 @@ export class HelpModal {
           </ul>
           <p>Drive around all the obstacles to build a complete map!</p>
 
-          <h4>Inspect SLAM Topics</h4>
-          <code>ros2 topic echo /map</code>
-          <p>This shows the OccupancyGrid message with cell values (-1=unknown, 0=free, 100=occupied).</p>
+          <h4>Step 6: Inspect the System</h4>
+          <p>Open a 4th terminal and explore what SLAM is doing:</p>
+          <table class="help-table">
+            <tr><td><code>ros2 node info /slam_node</code></td><td>See what the SLAM node subscribes to and publishes</td></tr>
+            <tr><td><code>ros2 topic list -t</code></td><td>See all active topics with their types</td></tr>
+            <tr><td><code>ros2 interface show sensor_msgs/msg/LaserScan</code></td><td>Understand the lidar message structure</td></tr>
+            <tr><td><code>ros2 interface show nav_msgs/msg/OccupancyGrid</code></td><td>Understand the map message structure</td></tr>
+          </table>
+
+          <h4>Step 7: Monitor Live Data</h4>
+          <table class="help-table">
+            <tr><td><code>ros2 topic echo /scan</code></td><td>Watch raw lidar data streaming in</td></tr>
+            <tr><td><code>ros2 topic echo /map</code></td><td>Watch occupancy grid values update</td></tr>
+            <tr><td><code>ros2 topic hz /scan</code></td><td>Check lidar rate (~10 Hz)</td></tr>
+            <tr><td><code>ros2 topic hz /map</code></td><td>Check map publish rate (~2 Hz)</td></tr>
+            <tr><td><code>ros2 topic bw /scan</code></td><td>Measure lidar bandwidth</td></tr>
+          </table>
+
+          <h4>Step 8: Tune Parameters</h4>
+          <p>Change SLAM behavior at runtime:</p>
+          <table class="help-table">
+            <tr><td><code>ros2 param list /slam_node</code></td><td>See all tunable parameters</td></tr>
+            <tr><td><code>ros2 param get /slam_node hit_prob</code></td><td>Check obstacle detection confidence</td></tr>
+            <tr><td><code>ros2 param set /slam_node hit_prob 0.95</code></td><td>Increase obstacle confidence</td></tr>
+            <tr><td><code>ros2 param set /slam_node miss_prob 0.1</code></td><td>More confident free-space marking</td></tr>
+            <tr><td><code>ros2 param dump /slam_node</code></td><td>Dump all current parameter values</td></tr>
+          </table>
+
+          <h4>Step 9: Record and Replay</h4>
+          <p>Record a mapping session for later analysis:</p>
+          <table class="help-table">
+            <tr><td><code>ros2 bag record -o my_run /scan /turtle1/pose /map</code></td><td>Record SLAM topics</td></tr>
+            <tr><td><code>ros2 bag info my_run</code></td><td>Inspect recorded data</td></tr>
+            <tr><td><code>ros2 bag play my_run</code></td><td>Replay the session</td></tr>
+            <tr><td><code>ros2 bag play my_run --rate 0.5</code></td><td>Replay at half speed</td></tr>
+          </table>
+
+          <h4>SLAM Cell Values</h4>
+          <p><code>ros2 topic echo /map</code> shows OccupancyGrid data: <strong>-1</strong> = unknown, <strong>0</strong> = free, <strong>100</strong> = occupied.</p>
         </div>
       </div>
     `;
