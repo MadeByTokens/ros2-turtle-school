@@ -308,6 +308,7 @@ export class HelpModal {
             <tr><td><code>ros2 param set /navigator_node goal_tolerance 0.5</code></td><td>Increase tolerance (reach goals sooner)</td></tr>
             <tr><td><code>ros2 param set /navigator_node max_speed 2.0</code></td><td>Drive faster</td></tr>
             <tr><td><code>ros2 param set /navigator_node obstacle_threshold 30</code></td><td>Avoid even partially occupied cells</td></tr>
+            <tr><td><code>ros2 param set /navigator_node robot_radius 0.8</code></td><td>Increase clearance from obstacles</td></tr>
           </table>
 
           <h4>Step 6: Loop Closure &amp; Drift</h4>

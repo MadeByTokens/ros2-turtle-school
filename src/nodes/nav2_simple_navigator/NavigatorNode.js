@@ -19,12 +19,14 @@ export class NavigatorNode extends Node {
         max_speed: 1.5,
         max_angular_speed: 2.5,
         obstacle_threshold: 50,
+        robot_radius: 0.6,
         ...options.parameters
       }
     });
 
     this.mapData = null;
     this.mapInfo = null;
+    this._inflationRadiusCells = 0;
     this.currentPose = { x: 5.5, y: 5.5, theta: 0 };
     this.isNavigating = false;
   }
@@ -51,6 +53,9 @@ export class NavigatorNode extends Node {
       if ('obstacle_threshold' in params && (params.obstacle_threshold < 0 || params.obstacle_threshold > 100)) {
         return { successful: false, reason: 'obstacle_threshold must be between 0 and 100' };
       }
+      if ('robot_radius' in params && (params.robot_radius < 0 || params.robot_radius > 3.0)) {
+        return { successful: false, reason: 'robot_radius must be between 0 and 3.0' };
+      }
       return { successful: true, reason: '' };
     });
 
@@ -61,6 +66,13 @@ export class NavigatorNode extends Node {
   _handleMap(msg) {
     this.mapInfo = msg.info;
     this.mapData = msg.data;
+    this._updateInflationRadius();
+  }
+
+  _updateInflationRadius() {
+    if (!this.mapInfo) return;
+    const radius = this.getParameter('robot_radius');
+    this._inflationRadiusCells = radius > 0 ? Math.ceil(radius / this.mapInfo.resolution) : 0;
   }
 
   _handlePose(msg) {
@@ -152,10 +164,12 @@ export class NavigatorNode extends Node {
    */
   _planPath(startX, startY, goalX, goalY) {
     const threshold = this.getParameter('obstacle_threshold');
+    this._updateInflationRadius();
+    const radiusCells = this._inflationRadiusCells;
     const startG = this._worldToGrid(startX, startY);
     const goalG = this._worldToGrid(goalX, goalY);
 
-    if (!this._isGridFree(goalG.gx, goalG.gy, threshold)) {
+    if (!this._isGridFreeInflated(goalG.gx, goalG.gy, threshold, radiusCells)) {
       this.logWarn('Goal position is inside an obstacle');
       return null;
     }
@@ -193,7 +207,7 @@ export class NavigatorNode extends Node {
         const nx = cx + dx;
         const ny = cy + dy;
 
-        if (!this._isGridFree(nx, ny, threshold)) continue;
+        if (!this._isGridFreeInflated(nx, ny, threshold, radiusCells)) continue;
 
         const nKey = key(nx, ny);
         const moveCost = (dx !== 0 && dy !== 0) ? 1.414 : 1.0;
@@ -223,6 +237,18 @@ export class NavigatorNode extends Node {
     const idx = gy * this.mapInfo.width + gx;
     const value = this.mapData[idx];
     return value >= 0 && value < threshold;
+  }
+
+  _isGridFreeInflated(gx, gy, threshold, radiusCells) {
+    if (radiusCells <= 0) return this._isGridFree(gx, gy, threshold);
+    const r2 = radiusCells * radiusCells;
+    for (let dx = -radiusCells; dx <= radiusCells; dx++) {
+      for (let dy = -radiusCells; dy <= radiusCells; dy++) {
+        if (dx * dx + dy * dy > r2) continue;
+        if (!this._isGridFree(gx + dx, gy + dy, threshold)) return false;
+      }
+    }
+    return true;
   }
 
   _worldToGrid(x, y) {

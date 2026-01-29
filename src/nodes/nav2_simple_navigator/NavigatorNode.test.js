@@ -50,6 +50,7 @@ describe('NavigatorNode', () => {
     expect(node.getParameter('goal_tolerance')).toBe(0.3);
     expect(node.getParameter('max_speed')).toBe(1.5);
     expect(node.getParameter('obstacle_threshold')).toBe(50);
+    expect(node.getParameter('robot_radius')).toBe(0.6);
   });
 
   it('validates parameter changes', () => {
@@ -63,9 +64,21 @@ describe('NavigatorNode', () => {
     const result2 = node.setParameters({ max_speed: 0 });
     expect(result2.successful).toBe(false);
 
+    // Invalid robot_radius (negative)
+    const result3 = node.setParameters({ robot_radius: -1 });
+    expect(result3.successful).toBe(false);
+
+    // Invalid robot_radius (too large)
+    const result4 = node.setParameters({ robot_radius: 5.0 });
+    expect(result4.successful).toBe(false);
+
     // Valid changes
-    const result3 = node.setParameters({ goal_tolerance: 0.5 });
-    expect(result3.successful).toBe(true);
+    const result5 = node.setParameters({ goal_tolerance: 0.5 });
+    expect(result5.successful).toBe(true);
+
+    // Valid robot_radius
+    const result6 = node.setParameters({ robot_radius: 1.0 });
+    expect(result6.successful).toBe(true);
   });
 
   describe('A* path planning', () => {
@@ -116,6 +129,49 @@ describe('NavigatorNode', () => {
       }
 
       const path = node._planPath(1.0, 1.0, 8.0, 1.0);
+      expect(path).not.toBeNull();
+      expect(path.length).toBeGreaterThan(0);
+    });
+
+    it('keeps clearance from obstacles when robot_radius > 0', () => {
+      // Use a larger map for this test
+      const width = 40;
+      const height = 40;
+      node.mapInfo = {
+        width,
+        height,
+        resolution: 0.5,
+        origin: { position: { x: 0, y: 0, z: 0 } },
+      };
+      node.mapData = new Array(width * height).fill(0);
+
+      // With default robot_radius=0.6 and resolution=0.5, radiusCells=ceil(0.6/0.5)=2
+      // Place obstacle at center of the map: grid (20, 20) -> world (10.25, 10.25)
+      node.mapData[20 * width + 20] = 100;
+
+      // Path from (3,10.25) to (17,10.25) — same row as obstacle, must route around
+      // Keep start/goal well away from edges to avoid inflation hitting boundaries
+      const path = node._planPath(3.0, 10.25, 17.0, 10.25);
+      expect(path).not.toBeNull();
+
+      // Verify no waypoint is within the inflation radius of the obstacle
+      const obstacleWorld = { x: 10.25, y: 10.25 };
+      const minClearance = node.getParameter('robot_radius');
+      for (const wp of path) {
+        const dist = Math.sqrt((wp.x - obstacleWorld.x) ** 2 + (wp.y - obstacleWorld.y) ** 2);
+        // Allow tolerance for grid discretization
+        expect(dist).toBeGreaterThan(minClearance - node.mapInfo.resolution);
+      }
+    });
+
+    it('reverts to point-robot behavior when robot_radius is 0', () => {
+      // Place obstacle at grid (10, 10)
+      node.mapData[10 * 20 + 10] = 100;
+
+      node.setParameters({ robot_radius: 0 });
+
+      // With radius=0, the path can pass adjacent to the obstacle
+      const path = node._planPath(1.0, 1.0, 9.0, 1.0);
       expect(path).not.toBeNull();
       expect(path.length).toBeGreaterThan(0);
     });

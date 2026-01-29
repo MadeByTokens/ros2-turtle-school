@@ -480,6 +480,7 @@ Parameters:
 | `max_speed` | 1.5 | Maximum linear speed (m/s) |
 | `max_angular_speed` | 2.5 | Maximum angular speed (rad/s) |
 | `obstacle_threshold` | 50 | Cells with occupancy >= this are obstacles |
+| `robot_radius` | 0.6 | Robot radius for obstacle inflation (m) |
 
 ### Loop Closure & Odometry Drift
 
