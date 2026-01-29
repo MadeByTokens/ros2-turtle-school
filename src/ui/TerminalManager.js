@@ -10,7 +10,7 @@ export class TerminalManager {
     this.containerId = options.containerId || 'terminals-container';
     this.tabListId = options.tabListId || 'terminal-tabs';
     this.addButtonId = options.addButtonId || 'add-terminal';
-    this.maxTerminals = options.maxTerminals || 4;
+    this.maxTerminals = options.maxTerminals || 6;
     this.onCommand = options.onCommand || (() => {});
 
     this.terminals = new Map();

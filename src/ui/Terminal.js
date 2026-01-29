@@ -557,14 +557,14 @@ export class Terminal {
    * Write text to terminal
    */
   write(text) {
-    this.xterm.write(text);
+    this.xterm.write(text.replace(/\r?\n/g, '\r\n'));
   }
 
   /**
    * Write a line (with newline)
    */
   writeln(text) {
-    this.xterm.write(text + '\r\n');
+    this.xterm.write(text.replace(/\r?\n/g, '\r\n') + '\r\n');
   }
 
   /**

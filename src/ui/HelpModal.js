@@ -296,6 +296,7 @@ export class HelpModal {
           <p>Watch the turtle plan a path and drive itself to the goal!</p>
 
           <h4>Step 4: Monitor Navigation</h4>
+          <p>Open a 5th terminal to inspect the system while all nodes keep running:</p>
           <table class="help-table">
             <tr><td><code>ros2 topic echo /plan</code></td><td>See the planned path waypoints</td></tr>
             <tr><td><code>ros2 action send_goal ... --feedback</code></td><td>Watch distance remaining</td></tr>

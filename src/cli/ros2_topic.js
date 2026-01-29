@@ -394,7 +394,7 @@ function handleHz(args, terminal) {
       const avgPeriod = duration / (timestamps.length - 1);
 
       terminal.writeln(`average rate: ${rate.toFixed(3)}`);
-      terminal.writeln(`\tmin: ${(avgPeriod * 0.9).toFixed(3)}s max: ${(avgPeriod * 1.1).toFixed(3)}s std dev: ${(avgPeriod * 0.05).toFixed(5)}s window: ${timestamps.length}`);
+      terminal.writeln(`  min: ${(avgPeriod * 0.9).toFixed(3)}s max: ${(avgPeriod * 1.1).toFixed(3)}s std dev: ${(avgPeriod * 0.05).toFixed(5)}s window: ${timestamps.length}`);
     }
   });
 
@@ -459,7 +459,7 @@ function handleBw(args, terminal) {
       const maxSize = Math.max(...samples.map(s => s.size));
 
       terminal.writeln(`${formatBytes(bw)}/s from ${samples.length} messages`);
-      terminal.writeln(`\tMessage size mean: ${formatBytes(meanSize)} min: ${formatBytes(minSize)} max: ${formatBytes(maxSize)}`);
+      terminal.writeln(`  Message size mean: ${formatBytes(meanSize)} min: ${formatBytes(minSize)} max: ${formatBytes(maxSize)}`);
     }
   });
 

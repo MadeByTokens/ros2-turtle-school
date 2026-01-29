@@ -18,7 +18,7 @@ Browser-based ROS2 CLI emulator for educational purposes. Runs entirely client-s
 - **SLAM Demo** - Simple occupancy grid mapping with lidar visualization
 - **Node Graph** - Interactive visualization of nodes and topic connections (like rqt_graph)
 - **Map Overlay** - Real-time occupancy grid displayed as canvas overlay with adjustable opacity
-- **Multiple Terminals** - Up to 4 terminal panes with tab management
+- **Multiple Terminals** - Up to 6 terminal panes with tab management
 - **Teleop Control** - WASD keys work directly from terminal (W/S: forward/back, A/D: turn, Q/E: diagonal)
 - **Bag Recording** - Record and playback topic messages
 - **TF2 Tools** - Query transforms with tf2_echo, tf2_monitor, view_frames
