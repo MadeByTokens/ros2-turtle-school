@@ -82,7 +82,7 @@ function handleList(args, terminal) {
   if (showAll || showMsgs) {
     terminal.writeln('Messages:');
     for (const msg of listMessages().sort()) {
-      terminal.writeln(`  ${msg}`);
+      terminal.writeln(`    ${msg}`);
     }
     terminal.writeln('');
   }
@@ -90,7 +90,7 @@ function handleList(args, terminal) {
   if (showAll || showSrvs) {
     terminal.writeln('Services:');
     for (const srv of listServices().sort()) {
-      terminal.writeln(`  ${srv}`);
+      terminal.writeln(`    ${srv}`);
     }
     terminal.writeln('');
   }
@@ -98,7 +98,7 @@ function handleList(args, terminal) {
   if (showAll || showActions) {
     terminal.writeln('Actions:');
     for (const action of listActions().sort()) {
-      terminal.writeln(`  ${action}`);
+      terminal.writeln(`    ${action}`);
     }
   }
 }

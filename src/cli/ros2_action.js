@@ -116,14 +116,9 @@ function handleInfo(args, terminal) {
   }
 
   terminal.writeln(`Action: ${actionName}`);
-  terminal.writeln(`Type: ${actionInfo.type}`);
-  terminal.writeln(`Node: ${actionInfo.node}`);
-  terminal.writeln('');
-  terminal.writeln('Action Servers:');
-  terminal.writeln(`  ${actionInfo.node}`);
-  terminal.writeln('');
-  terminal.writeln('Action Clients:');
-  terminal.writeln('  (none)');
+  terminal.writeln('Action clients: 0');
+  terminal.writeln('Action servers: 1');
+  terminal.writeln(`    ${actionInfo.node}`);
 }
 
 /**

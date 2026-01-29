@@ -86,53 +86,23 @@ function handleInfo(args, terminal) {
   const procInfo = ProcessManager.getProcessByNodeName(nodeName);
   const node = procInfo?.node;
 
-  // Subscribers
-  terminal.writeln('  Subscribers:');
-  if (node && node.subscriptions.length > 0) {
-    for (const sub of node.subscriptions) {
-      terminal.writeln(`    ${sub.topic}: ${sub.msgType}`);
+  const sections = [
+    { label: 'Subscribers', items: node?.subscriptions?.map(s => `${s.topic}: ${s.msgType}`) || [] },
+    { label: 'Publishers', items: node?.publishers?.map(p => `${p.topic}: ${p.msgType}`) || [] },
+    { label: 'Service Servers', items: node?.services?.map(s => `${s.name}: ${s.type}`) || [] },
+    { label: 'Service Clients', items: [] },
+    { label: 'Action Servers', items: node?.actionServers?.map(a => `${a.name}: ${a.type}`) || [] },
+    { label: 'Action Clients', items: [] },
+  ];
+
+  for (const section of sections) {
+    terminal.writeln(`  ${section.label}:`);
+    if (section.items.length > 0) {
+      for (const item of section.items) {
+        terminal.writeln(`    ${item}`);
+      }
     }
-  } else {
-    terminal.writeln('    (none)');
   }
-
-  // Publishers
-  terminal.writeln('  Publishers:');
-  if (node && node.publishers.length > 0) {
-    for (const pub of node.publishers) {
-      terminal.writeln(`    ${pub.topic}: ${pub.msgType}`);
-    }
-  } else {
-    terminal.writeln('    (none)');
-  }
-
-  // Service Servers
-  terminal.writeln('  Service Servers:');
-  if (node && node.services.length > 0) {
-    for (const srv of node.services) {
-      terminal.writeln(`    ${srv.name}: ${srv.type}`);
-    }
-  } else {
-    terminal.writeln('    (none)');
-  }
-
-  // Service Clients
-  terminal.writeln('  Service Clients:');
-  terminal.writeln('    (none)');
-
-  // Action Servers
-  terminal.writeln('  Action Servers:');
-  if (node && node.actionServers.length > 0) {
-    for (const action of node.actionServers) {
-      terminal.writeln(`    ${action.name}: ${action.type}`);
-    }
-  } else {
-    terminal.writeln('    (none)');
-  }
-
-  // Action Clients
-  terminal.writeln('  Action Clients:');
-  terminal.writeln('    (none)');
 }
 
 // Self-register with the command registry

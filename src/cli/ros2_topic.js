@@ -357,7 +357,7 @@ function handleHz(args, terminal) {
       const rate = (timestamps.length - 1) / duration;
       const avgPeriod = duration / (timestamps.length - 1);
 
-      terminal.writeln(`\raverage rate: ${rate.toFixed(3)} Hz`);
+      terminal.writeln(`average rate: ${rate.toFixed(3)}`);
       terminal.writeln(`\tmin: ${(avgPeriod * 0.9).toFixed(3)}s max: ${(avgPeriod * 1.1).toFixed(3)}s std dev: ${(avgPeriod * 0.05).toFixed(5)}s window: ${timestamps.length}`);
     }
   });
@@ -365,6 +365,18 @@ function handleHz(args, terminal) {
   terminal.addSubscription({
     destroy: () => SimDDS.unsubscribe(sub)
   });
+}
+
+/**
+ * Format byte count for display (matches ROS 2 CLI format)
+ */
+function formatBytes(bytes) {
+  if (bytes >= 1000000) {
+    return `${(bytes / 1000000).toFixed(2)} MB`;
+  } else if (bytes >= 1000) {
+    return `${(bytes / 1000).toFixed(2)} KB`;
+  }
+  return `${Math.round(bytes)} B`;
 }
 
 /**
@@ -386,6 +398,7 @@ function handleBw(args, terminal) {
 
   const samples = [];
   const windowSize = 100;
+  let subscribedPrinted = false;
 
   const sub = SimDDS.subscribe(topicName, topicInfo?.type || 'unknown', (msg) => {
     const now = Date.now();
@@ -396,14 +409,21 @@ function handleBw(args, terminal) {
       samples.shift();
     }
 
+    if (!subscribedPrinted) {
+      terminal.writeln(`Subscribed to [${topicName}]`);
+      subscribedPrinted = true;
+    }
+
     if (samples.length >= 2) {
-      const duration = (samples[samples.length - 1].time - samples[0].time) / 1000;
+      const duration = Math.max((samples[samples.length - 1].time - samples[0].time) / 1000, 0.001);
       const totalBytes = samples.reduce((sum, s) => sum + s.size, 0);
       const bw = totalBytes / duration;
+      const meanSize = totalBytes / samples.length;
+      const minSize = Math.min(...samples.map(s => s.size));
+      const maxSize = Math.max(...samples.map(s => s.size));
 
-      terminal.writeln(`\rSubscribed to [${topicName}]`);
-      terminal.writeln(`average: ${(bw / 1024).toFixed(2)} KB/s`);
-      terminal.writeln(`\tmean: ${(totalBytes / samples.length).toFixed(2)} B  min: ${Math.min(...samples.map(s => s.size))} B  max: ${Math.max(...samples.map(s => s.size))} B  window: ${samples.length}`);
+      terminal.writeln(`${formatBytes(bw)}/s from ${samples.length} messages`);
+      terminal.writeln(`\tMessage size mean: ${formatBytes(meanSize)} min: ${formatBytes(minSize)} max: ${formatBytes(maxSize)}`);
     }
   });
 

@@ -140,7 +140,7 @@ function handleGet(args, terminal) {
     return;
   }
 
-  terminal.writeln(`${paramName}: ${formatValue(value)}`);
+  terminal.writeln(`${getTypeLabel(value)} ${formatValue(value)}`);
 }
 
 /**
@@ -212,6 +212,27 @@ function handleDump(args, terminal) {
 function handleLoad(args, terminal) {
   terminal.writeln('\x1b[33mParameter file loading is not supported in this simulation.\x1b[0m');
   terminal.writeln('Use ros2 param set to set individual parameters.');
+}
+
+/**
+ * Get the type label for a parameter value (matches ROS 2 CLI format)
+ */
+function getTypeLabel(value) {
+  if (typeof value === 'boolean') return 'Boolean value is:';
+  if (typeof value === 'number') {
+    return Number.isInteger(value) ? 'Integer value is:' : 'Double value is:';
+  }
+  if (typeof value === 'string') return 'String value is:';
+  if (Array.isArray(value)) {
+    if (value.length === 0) return 'String values are:';
+    const first = value[0];
+    if (typeof first === 'boolean') return 'Boolean values are:';
+    if (typeof first === 'number') {
+      return Number.isInteger(first) ? 'Integer values are:' : 'Double values are:';
+    }
+    return 'String values are:';
+  }
+  return 'String value is:';
 }
 
 /**
