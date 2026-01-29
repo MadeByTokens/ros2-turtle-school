@@ -5,6 +5,7 @@
 
 // Standard messages
 import './std_msgs.js';
+import './std_srvs.js';
 import './geometry_msgs.js';
 
 // Turtlesim messages
