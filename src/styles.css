@@ -747,6 +747,7 @@ input:focus:not(:focus-visible) {
 /* Help modal tabs */
 .help-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   margin-bottom: 16px;
   border-bottom: 1px solid var(--border-color);
@@ -754,7 +755,7 @@ input:focus:not(:focus-visible) {
 }
 
 .help-tab {
-  padding: 8px 16px;
+  padding: 8px 12px;
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -763,6 +764,7 @@ input:focus:not(:focus-visible) {
   cursor: pointer;
   border-radius: 4px 4px 0 0;
   transition: color 0.2s, background 0.2s;
+  white-space: nowrap;
 }
 
 .help-tab:hover {
