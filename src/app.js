@@ -179,10 +179,7 @@ class App {
       try {
         const text = await navigator.clipboard.readText();
         if (text) {
-          for (const char of text) {
-            if (char === '\n' || char === '\r') continue;
-            terminal._insertChar(char);
-          }
+          terminal.insertText(text);
         }
       } catch (err) {
         console.error('Paste failed:', err);

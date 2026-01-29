@@ -208,16 +208,10 @@ export class Terminal {
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
-        // Insert each character as if typed
-        for (const char of text) {
-          // Skip newlines or convert to space
-          if (char === '\n' || char === '\r') continue;
-          this._insertChar(char);
-        }
+        this.insertText(text);
       }
     } catch (err) {
       console.error('Failed to paste:', err);
-      // Fallback: prompt user that paste failed
     }
   }
 
@@ -391,6 +385,20 @@ export class Terminal {
       char +
       this.currentLine.slice(this.cursorPosition);
     this.cursorPosition++;
+
+    this._refreshLine();
+  }
+
+  insertText(text) {
+    if (this.isProcessing) return;
+    const clean = text.replace(/[\r\n]/g, '');
+    if (!clean) return;
+
+    this.currentLine =
+      this.currentLine.slice(0, this.cursorPosition) +
+      clean +
+      this.currentLine.slice(this.cursorPosition);
+    this.cursorPosition += clean.length;
 
     this._refreshLine();
   }
