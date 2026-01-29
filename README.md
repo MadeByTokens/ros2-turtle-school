@@ -278,6 +278,29 @@ The SLAM node:
 
 ## Testing
 
+### Automated Tests
+
+The project uses [Vitest](https://vitest.dev/) for automated testing.
+
+```bash
+npm test              # Run tests in watch mode
+npm test -- --run     # Run tests once
+npm run test:coverage # Run tests with coverage report
+```
+
+Test suite covers the core ROS 2 emulation layer (218 tests across 6 files):
+
+| Test File | Module | Tests |
+|-----------|--------|-------|
+| `src/cli/messageParser.test.js` | YAML-like message parsing | 33 |
+| `src/msgs/registry.test.js` | Message/service/action registry | 31 |
+| `src/comm/LocalComm.test.js` | Pub/sub, services, actions | 43 |
+| `src/core/WorldState.test.js` | Collision, raycasting, lidar | 50 |
+| `src/core/Node.test.js` | Parameters, timers, lifecycle | 33 |
+| `src/core/ProcessManager.test.js` | Process spawn, kill, queries | 28 |
+
+### Runtime Logging
+
 Open browser console for debug output. All nodes log via `LogManager`.
 
 ```javascript
@@ -320,6 +343,7 @@ View logs: run `rqt_console` in terminal.
 - [xterm.js](https://xtermjs.org/) - Terminal emulation
 - [Cytoscape.js](https://js.cytoscape.org/) - Graph visualization
 - [Vite](https://vitejs.dev/) - Build tool
+- [Vitest](https://vitest.dev/) - Test framework (dev)
 
 ## License
 
